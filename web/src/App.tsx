@@ -6,7 +6,9 @@ import * as C from "./api/client";
 import type { J } from "./lib/api";
 import { AppCtx, GROUPS, TABS, type ChatMsg, type Ctx, type Tab } from "./lib/store";
 import { LineageModal, WhyModal } from "./components/Explain";
+import { AgentPanel, CommandBar, ShortcutSheet, Toasts } from "./components/chrome";
 import { cap } from "./lib/format";
+import { Skeleton } from "./components/ui";
 import Data from "./pages/Data";
 import Exec from "./pages/Exec";
 import WhatIf from "./pages/WhatIf";
@@ -24,7 +26,16 @@ import Models from "./pages/Models";
 const SCREENS: Record<Tab, () => JSX.Element | null> = { data: Data, exec: Exec, whatif: WhatIf, seats: Seats, region: Region, eng: Eng, agent: Agent, alerts: Alerts, compare: Compare, pack: Pack, audit: Audit, cost: Cost, models: Models };
 const LABEL = Object.fromEntries(TABS) as Record<Tab, string>;
 const SEGMENTS = ["executive", "manager", "analyst", "guest"];
+const SHORT: Record<string, string> = { baseline: "Baseline", breach: "Breach", healthy: "Healthy", incident: "Incident", newcountry: "New country", noids: "No IDs", overstated: "Overstated", shelfware: "Shelfware" };
 const SID = "s-" + ((window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+function NavIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <rect x="2" y="2" width="5" height="5" rx="1.2" /><rect x="9" y="2" width="5" height="5" rx="1.2" /><rect x="2" y="9" width="5" height="5" rx="1.2" /><rect x="9" y="9" width="5" height="5" rx="1.2" />
+    </svg>
+  );
+}
 
 export default function App() {
   const [personas, setPersonas] = useState<Record<string, string> | null>(null);
@@ -38,13 +49,59 @@ export default function App() {
   const tabRef = useRef<Tab>("data"), personaRef = useRef(""), stRef = useRef<J>(null);
   const [lin, setLin] = useState<J>(null);
   const [whyM, setWhyM] = useState<{ m: ChatMsg; L: (J | null)[] } | null>(null);
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("np-side") === "1");
+  const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
+    const t = localStorage.getItem("np-theme");
+    return t === "light" || t === "dark" ? t : "system";
+  });
+  const [cmd, setCmd] = useState(false);
+  const [panel, setPanel] = useState(false);
+  const [help, setHelp] = useState(false);
+  const [toasts, setToasts] = useState<{ id: number; text: string }[]>([]);
 
   const redraw = useCallback(() => setV((v) => v + 1), []);
-  /* Every show() is a new navigation (new location.key), so the page re-mounts and re-fetches, exactly as v1 re-ran R[t](). */
-  const navRef = useRef(nav); navRef.current = nav;     // useNavigate changes identity per location; keep show() stable
+  const navRef = useRef(nav); navRef.current = nav;
   const show = useCallback((t: Tab) => { tabRef.current = t; navRef.current("/" + t); }, []);
   const setPersona = useCallback((p: string) => { personaRef.current = p; setPersonaRaw(p); }, []);
   const setSTx = useCallback((s: J) => { stRef.current = s; setST(s); }, []);
+  const toast = useCallback((text: string) => {
+    const id = Date.now() + Math.random();
+    setToasts((t) => [...t.slice(-3), { id, text }]);
+    window.setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 2800);
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    const dark = document.documentElement.classList.contains("dark");
+    const next = dark ? "light" : "dark";
+    localStorage.setItem("np-theme", next);
+    setTheme(next);
+  }, []);
+
+  useEffect(() => {
+    const apply = () => {
+      const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.classList.toggle("dark", dark);
+      document.documentElement.dataset.theme = dark ? "dark" : "light";
+    };
+    apply();
+    if (theme !== "system") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, [theme]);
+
+  const loadScenario = useCallback(async (k: string) => {
+    try {
+      const s = await C.loadScenario(k);
+      setSTx(s);
+      chatRef.current.length = 0;
+      show(tabRef.current === "data" ? "exec" : tabRef.current);
+      toast(s.label ? `Preset · ${s.label}` : "Preset updated");
+    } catch (e) {
+      console.error(e);
+      toast("Couldn't load that preset");
+    }
+  }, [setSTx, show, toast]);
 
   useEffect(() => {
     (async () => {
@@ -54,7 +111,6 @@ export default function App() {
     })();
   }, [setPersona, setSTx, show]);
 
-  /* Explain this number: any [data-metric=M\d\d] click, anywhere (KPI tiles). */
   const explain = useCallback(async (mid: string) => {
     let L; try { L = await C.getLineage(mid); } catch { return; }
     setLin(L);
@@ -70,7 +126,6 @@ export default function App() {
     setWhyM({ m, L });
   }, []);
 
-  /* Ask: stream (SSE over fetch) with a graceful fallback to /api/ask; never leaves a frozen bubble. */
   const ask = useCallback(async (q: string, as?: string) => {
     if (tabRef.current !== "agent") show("agent");
     const persona = as || personaRef.current, CHAT = chatRef.current, ST = stRef.current;
@@ -100,72 +155,123 @@ export default function App() {
       catch (e2) {
         m.bot = { type: "caveat", intent: "error", error: true, mode: "error", brain: "rules", citations: [], data_as_of: ST.data_as_of,
           text: "The service didn't answer (" + ((e2 as Error).message || "network error") + "), so there is no answer and no number to show. Please ask again; if it repeats, restart the app." };
+        toast("The agent didn't answer");
       }
     }
     m.streaming = false; redraw();
-  }, [redraw, show]);
+  }, [redraw, show, toast]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const typing = !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+      const meta = e.metaKey || e.ctrlKey;
+      if (meta && e.key.toLowerCase() === "k") { e.preventDefault(); setCmd(true); return; }
+      if (meta && e.key.toLowerCase() === "j") { e.preventDefault(); setPanel((v) => !v); return; }
+      if (e.key === "Escape") { setCmd(false); setPanel(false); setHelp(false); return; }
+      if (typing) return;
+      if (e.key === "?") { e.preventDefault(); setHelp(true); return; }
+      if (e.key.toLowerCase() === "t" && !meta) { e.preventDefault(); toggleTheme(); return; }
+      if (e.key >= "1" && e.key <= "8") {
+        const s = SCEN[Number(e.key) - 1];
+        if (s) { e.preventDefault(); loadScenario(s.key); }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [SCEN, loadScenario, toggleTheme]);
 
   const personaLabel = personas ? personas[persona] ?? "" : "";
   const ctx: Ctx = useMemo(() => ({
     ST, setST: setSTx, SCEN, tab, show, persona, personaLabel, personas: personas || {}, setPersona,
-    chat: chatRef.current, redraw, clearChat: () => { chatRef.current.length = 0; }, ask, explain, why,
-  }), [ST, setSTx, SCEN, tab, show, persona, personaLabel, personas, setPersona, redraw, ask, explain, why]);
+    chat: chatRef.current, redraw, clearChat: () => { chatRef.current.length = 0; }, ask, explain, why, loadScenario, toast,
+  }), [ST, setSTx, SCEN, tab, show, persona, personaLabel, personas, setPersona, redraw, ask, explain, why, loadScenario, toast]);
+
+  const darkOn = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   return (
     <AppCtx.Provider value={ctx}>
       <div className="min-h-screen flex flex-col">
-        <header className="flex justify-between items-center gap-3 flex-wrap px-6 py-3 border-b border-line bg-canvas z-40">
-          <div className="flex items-center gap-3 text-[15px]">
-            <span className="w-2 h-2 rounded-full bg-accentFill" aria-hidden="true"></span>
-            <span><b className="font-semibold text-navy">NimbusPay</b> Adoption Insights</span>
-            <span className="tag !mr-0 border border-line bg-canvas max-[479px]:hidden">live product</span>
-            <span className="tag !mr-0 border border-accent bg-canvas text-accent font-semibold">SYNTHETIC DATA</span>
+        <header className="shell-header">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="brand-mark" aria-hidden="true"></span>
+            <div className="min-w-0">
+              <div className="text-[15px] leading-5"><b className="font-semibold" style={{ color: "var(--np-heading)" }}>NimbusPay</b> Adoption Insights</div>
+              <span id="ds" className="muted text-[12px]">{ST ? <><span className="whitespace-nowrap">Dataset: {ST.dataset_label}</span><span className="max-sm:hidden"> · </span><span className="whitespace-nowrap max-sm:block">data as of {ST.data_as_of}</span></> : ""}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-x-4 gap-y-2 flex-wrap min-w-0 max-w-full">
-            {/* One role control: four segments plus "More roles" for the other personas. Same testids and behaviour as v1. */}
+          <div className="header-tools">
             <div className="roles flex items-center gap-2 min-w-0 max-w-full" data-testid="role-switch" title="Role switch: scope is enforced on the server, the UI only sends the role name">
               <span className="eyebrow max-sm:hidden">Role</span>
               <div className="inline-flex items-center gap-0.5 rounded-control border border-lineStrong p-0.5 bg-surface max-w-full overflow-x-auto">
                 {SEGMENTS.map((r) => (
                   <button key={r} type="button" data-role={r} data-testid={`role-${r}`} onClick={() => setPersona(r)} aria-pressed={persona === r}
-                    className={`role px-2 sm:px-3 py-1 min-h-[44px] sm:min-h-0 rounded-[6px] text-[12px] sm:text-[13px] whitespace-nowrap transition-colors duration-fast ${persona === r ? (r === "guest" ? "on bg-critical text-white font-semibold" : "on bg-navy text-white font-semibold") : "text-ink hover:bg-canvas"}`}>{cap(r)}</button>
+                    className={`role px-2 sm:px-3 py-1 min-h-[44px] sm:min-h-0 rounded-[8px] text-[12px] sm:text-[13px] whitespace-nowrap transition-colors duration-fast ${persona === r ? (r === "guest" ? "on font-semibold" : "on bg-navy text-white font-semibold") : "text-ink hover:bg-canvas"}`}>{cap(r)}</button>
                 ))}
                 <select id="persona" data-testid="persona" aria-label="More roles" value={SEGMENTS.includes(persona) ? "" : persona} onChange={(e) => e.target.value && setPersona(e.target.value)}
-                  className={`min-h-[44px] sm:min-h-0 !border-0 !rounded-[6px] !py-1 !pl-3 !pr-7 text-[12px] sm:text-[13px] max-w-[124px] sm:max-w-[190px] ${SEGMENTS.includes(persona) ? "!bg-transparent text-ink" : "on !bg-navy !text-white font-semibold"}`}>
+                  className={`min-h-[44px] sm:min-h-0 !border-0 !rounded-[8px] !py-1 !pl-3 !pr-7 text-[12px] sm:text-[13px] max-w-[124px] sm:max-w-[190px] ${SEGMENTS.includes(persona) ? "!bg-transparent text-ink" : "on !bg-navy !text-white font-semibold"}`}>
                   <option value="" disabled>More roles</option>
                   {personas && Object.entries(personas).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
             </div>
-            <span id="ds" className="muted text-[12px]">{ST ? <><span className="whitespace-nowrap max-sm:block">Dataset: {ST.dataset_label}</span><span className="max-sm:hidden"> | </span><span className="whitespace-nowrap max-sm:block">data as of {ST.data_as_of}</span></> : ""}</span>
+            <div className="preset-scroll" role="group" aria-label="Scenario presets">
+              {SCEN.map((s: J, n: number) => (
+                <button key={s.key} type="button" data-preset={s.key} aria-pressed={ST?.dataset === s.key} title={s.label} onClick={() => loadScenario(s.key)}>
+                  <span className="muted mr-1">{n + 1}</span>{SHORT[s.key] || s.label}
+                </button>
+              ))}
+            </div>
+            <button type="button" className="icon-btn" aria-label={darkOn ? "Switch to light theme" : "Switch to dark theme"} title="Theme (T)" onClick={toggleTheme}>
+              {darkOn ? (
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="8" cy="8" r="3" /><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" /></svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M13.5 10.2A5.5 5.5 0 0 1 5.8 2.5 5.5 5.5 0 1 0 13.5 10.2z" /></svg>
+              )}
+            </button>
+            <button type="button" className="icon-btn" aria-label="Open command bar" title="Command (⌘K)" onClick={() => setCmd(true)}>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="7" cy="7" r="4.2" /><path d="M10.2 10.2 13.5 13.5" /></svg>
+            </button>
+            <button type="button" className="icon-btn" aria-label="Open agent panel" aria-pressed={panel} title="Agent panel (⌘J)" onClick={() => setPanel((v) => !v)}>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 3.5h7.5a2 2 0 0 1 2 2V12L10 9.5H3a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z" /></svg>
+            </button>
+            <span className="pill">data: synthetic</span>
           </div>
         </header>
-        <div className="flex flex-1 flex-col lg:flex-row">
-          {/* Full-height sidebar column; the nav inside it is sticky. Below lg: one horizontally scrolling row of tabs. */}
-          <div className="lg:w-[200px] shrink-0 bg-surface border-b lg:border-b-0 lg:border-r border-line">
-            <nav id="tabs" aria-label="Screens" className="px-3 py-2 lg:py-6 flex lg:flex-col gap-1 lg:gap-5 flex-nowrap overflow-x-auto lg:overflow-visible lg:sticky lg:top-0">
+        <div className="shell-body">
+          <div className={`shell-side ${collapsed ? "collapsed" : ""}`}>
+            <button type="button" className="icon-btn side-toggle" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} onClick={() => { const n = !collapsed; setCollapsed(n); localStorage.setItem("np-side", n ? "1" : "0"); }}>
+              <NavIcon />
+            </button>
+            <nav id="tabs" aria-label="Screens">
               {GROUPS.map(([g, ts]) => (
-                <div key={g} className="flex lg:flex-col gap-0.5 flex-nowrap shrink-0">
-                  <div className="eyebrow px-3 mb-1 hidden lg:block">{g}</div>
+                <div key={g} className="flex lg:flex-col gap-0.5">
+                  <div className="eyebrow px-3 mb-1">{g}</div>
                   {ts.map((k) => (
-                    <button key={k} data-tab={k} id={`tab-${k}`} onClick={() => show(k)} aria-current={tab === k ? "page" : undefined}
-                      className={`text-left px-3 py-1.5 min-h-[44px] lg:min-h-0 whitespace-nowrap rounded-control text-[13px] transition-colors duration-fast ${tab === k ? "on bg-canvas text-ink font-semibold shadow-[inset_2px_0_0_theme(colors.accentFill)] border border-line" : "text-muted border border-transparent hover:text-ink"}`}>{LABEL[k]}</button>
+                    <button key={k} data-tab={k} id={`tab-${k}`} onClick={() => show(k)} aria-current={tab === k ? "page" : undefined} className={`nav-item ${tab === k ? "on" : ""}`} title={LABEL[k]}>
+                      <NavIcon />
+                      <span className="nav-label">{LABEL[k]}</span>
+                    </button>
                   ))}
                 </div>
               ))}
             </nav>
           </div>
-          <main id="view" className="flex-1 min-w-0 px-6 lg:px-10 py-8 max-w-[1200px]">
+          <main id="view">
             {ST && personas ? (
               <Routes>
                 {TABS.map(([k]) => { const Page = SCREENS[k]; return <Route key={k} path={"/" + k} element={<div className="screen" key={loc.key + (k === "agent" ? ":" + persona : "")}><Page /></div>} />; })}
                 <Route path="*" element={<Navigate to="/data" replace />} />
               </Routes>
-            ) : null}
+            ) : <Skeleton rows={6} />}
           </main>
         </div>
         <footer className="muted px-6 py-5 text-[12px] text-center border-t border-line">Read-only. Every number is synthetic and labelled; thresholds and weights are placeholders to agree. Metric version <span id="ver">v1.0</span>. Built by Gowtham S.</footer>
       </div>
+      {cmd ? <CommandBar tabs={TABS} scen={SCEN} onTab={show} onPreset={loadScenario} onAsk={ask} onClose={() => setCmd(false)} /> : null}
+      {panel ? <AgentPanel chat={chatRef.current} onAsk={ask} onClose={() => setPanel(false)} /> : null}
+      {help ? <ShortcutSheet onClose={() => setHelp(false)} /> : null}
+      <Toasts items={toasts} />
       {lin ? <LineageModal L={lin} onClose={() => setLin(null)} /> : null}
       {whyM ? <WhyModal m={whyM.m} L={whyM.L} ST={ST} onClose={() => setWhyM(null)} /> : null}
     </AppCtx.Provider>

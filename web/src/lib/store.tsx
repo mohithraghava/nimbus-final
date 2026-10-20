@@ -20,6 +20,8 @@ export type Ctx = {
   ask: (q: string, persona?: string) => void;
   explain: (mid: string) => void;
   why: (m: ChatMsg) => void;
+  loadScenario: (k: string) => void;
+  toast: (text: string) => void;
 };
 
 export const AppCtx = createContext<Ctx | null>(null);

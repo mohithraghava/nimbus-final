@@ -1,8 +1,7 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 /* KPI tile. data-metric M\d\d opens "Explain this number" (handled by a document listener in App, as before). */
 export function Kpi({ id, label, val, sub = "", eyebrow }: { id: string; label: string; val: ReactNode; sub?: string; eyebrow?: string }) {
-  /* eyebrow: a plain grey label for tiles whose slot is not a metric ID (e.g. "Funnel check"); data-metric/testid unchanged. */
   return (
     <div className="kpi" data-metric={id} data-testid={`kpi-${id}`} title="Click: explain this number">
       <div className={eyebrow ? "eyebrow" : "id"}>{eyebrow ?? id}</div>
@@ -13,36 +12,84 @@ export function Kpi({ id, label, val, sub = "", eyebrow }: { id: string; label: 
   );
 }
 
-/* Horizontal bars: rows of [label, value, display?] scaled to max. */
-export function Bars({ rows, max }: { rows: [string, number, ReactNode?][]; max: number }) {
+type Tone = "accent" | "navy" | "slate";
+
+/* Horizontal bars: rows of [label, value, display?, tone?] scaled to max. Numbers are in the DOM immediately. */
+export function Bars({ rows, max, legend }: { rows: [string, number, ReactNode?, Tone?][]; max: number; legend?: [string, Tone?][] }) {
   return (
-    <div className="flex flex-col gap-2">
-      {rows.map(([l, v, n], i) => (
-        <div className="flex gap-3 items-center" key={i}>
-          <span className="w-[170px] shrink-0 text-muted text-[13px]">{l}</span>
-          <div className="bar flex-1"><i style={{ width: `${max ? (100 * v) / max : 0}%` }}></i></div>
-          <span className="w-[80px] text-right tabular-nums">{n ?? v}</span>
+    <div>
+      {legend ? (
+        <div className="legend">
+          {legend.map(([name, tone]) => <span key={name}><i className={tone || "accent"} />{name}</span>)}
         </div>
-      ))}
+      ) : null}
+      <div className="flex flex-col gap-2.5">
+        {rows.map(([l, v, n, tone], i) => (
+          <div className="bar-row" key={i} title={`${l}: ${typeof n === "string" || typeof n === "number" ? n : v}`}>
+            <span className="bar-label">{l}</span>
+            <div className="bar" role="img" aria-label={`${l} ${n ?? v}`}><i className={tone || "accent"} style={{ width: `${max ? Math.max(0, Math.min(100, (100 * Number(v)) / max)) : 0}%` }} /></div>
+            <span className="bar-val">{n ?? v}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
 export function Header({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <div className="mb-6">
+    <div className="page-head">
       <h1>{title}</h1>
       {children ? <p className="lede">{children}</p> : null}
     </div>
   );
 }
 
-/* Modal: backdrop click closes; wrapper id lets tests wait for it to detach (#lin, #why). */
+export function Subnav({ items }: { items: { id: string; label: string }[] }) {
+  return (
+    <div className="subnav" role="navigation" aria-label="On this page">
+      {items.map((it) => (
+        <a key={it.id} href={"#" + it.id} onClick={(e) => { e.preventDefault(); document.getElementById(it.id)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>{it.label}</a>
+      ))}
+    </div>
+  );
+}
+
+/* Decorative count-up. The visible text animates; do not use on values tests read immediately. */
+export function CountUp({ n }: { n: number }) {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) { setV(n); return; }
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - t0) / 700);
+      const e = 1 - Math.pow(1 - p, 3);
+      setV(Math.round(n * e));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [n]);
+  return <span className="tabular-nums">{v}</span>;
+}
+
+export function Skeleton({ rows = 4 }: { rows?: number }) {
+  return (
+    <div className="skel" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Loading</span>
+      <div className="skel-bar skel-card" />
+      {Array.from({ length: rows }, (_, i) => <div key={i} className="skel-bar" style={{ width: `${92 - (i % 3) * 12}%` }} />)}
+    </div>
+  );
+}
+
 export function Modal({ id, onClose, children, width = 740, testid }: { id: string; onClose: () => void; children: ReactNode; width?: number; testid: string }) {
   return (
     <div id={id}>
       <div className="modal" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-        <div className="tile why overflow-auto shadow-[0_8px_30px_rgba(0,0,0,0.08)]" style={{ maxWidth: width, width: "94%", maxHeight: "86vh" }} data-testid={testid}>
+        <div className="tile why overflow-auto" style={{ maxWidth: width, width: "94%", maxHeight: "86vh", boxShadow: "var(--np-shadow-pop)" }} data-testid={testid}>
           {children}
         </div>
       </div>
@@ -50,7 +97,6 @@ export function Modal({ id, onClose, children, width = 740, testid }: { id: stri
   );
 }
 
-/* Styled file picker: the real <input type=file> stays in the form (same name, accept, required, testid) but is visually hidden. */
 export function FileField({ name, accept, label, testid, required = true }: { name: string; accept: string; label: string; testid?: string; required?: boolean }) {
   const [file, setFile] = useState("");
   return (

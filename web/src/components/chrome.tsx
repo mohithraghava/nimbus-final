@@ -1,0 +1,107 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ChatMsg, Tab } from "../lib/store";
+
+export function Toasts({ items }: { items: { id: number; text: string }[] }) {
+  if (!items.length) return null;
+  return (
+    <div className="toasts">
+      {items.map((t) => <div key={t.id} className="toast" role="status">{t.text}</div>)}
+    </div>
+  );
+}
+
+export function ShortcutSheet({ onClose }: { onClose: () => void }) {
+  const rows: [string, string][] = [
+    ["⌘K / Ctrl+K", "Command bar"],
+    ["⌘J / Ctrl+J", "Agent panel"],
+    ["1 – 8", "Scenario presets"],
+    ["T", "Theme"],
+    ["?", "This sheet"],
+    ["Esc", "Close"],
+  ];
+  return (
+    <div className="modal" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="tile" style={{ maxWidth: 420, width: "92%" }} role="dialog" aria-label="Keyboard shortcuts">
+        <h2 className="!mt-0">Keyboard</h2>
+        <table><tbody>{rows.map(([k, v]) => <tr key={k}><td><span className="help-k">{k}</span></td><td>{v}</td></tr>)}</tbody></table>
+        <p className="mt-4"><button className="ghost" onClick={onClose}>Close</button></p>
+      </div>
+    </div>
+  );
+}
+
+export function CommandBar({ tabs, scen, onTab, onPreset, onAsk, onClose }: {
+  tabs: [Tab, string][];
+  scen: { key: string; label: string }[];
+  onTab: (t: Tab) => void;
+  onPreset: (k: string) => void;
+  onAsk: (q: string) => void;
+  onClose: () => void;
+}) {
+  const [q, setQ] = useState("");
+  const [i, setI] = useState(0);
+  const ref = useRef<HTMLInputElement>(null);
+  const items = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    const screens = tabs.filter(([, l]) => !s || l.toLowerCase().includes(s)).map(([k, l]) => ({ kind: "tab" as const, id: k, label: l }));
+    const presets = scen.filter((x) => !s || x.label.toLowerCase().includes(s) || x.key.includes(s)).map((x) => ({ kind: "preset" as const, id: x.key, label: x.label }));
+    return [...screens, ...presets].slice(0, 12);
+  }, [q, tabs, scen]);
+  useEffect(() => { ref.current?.focus(); }, []);
+  useEffect(() => { setI(0); }, [q]);
+  const run = (idx: number) => {
+    const it = items[idx];
+    if (it?.kind === "tab") { onTab(it.id); onClose(); return; }
+    if (it?.kind === "preset") { onPreset(it.id); onClose(); return; }
+    if (q.trim()) { onAsk(q.trim()); onClose(); }
+  };
+  return (
+    <>
+      <div className="cmd-back" onClick={onClose} />
+      <div className="cmd" role="dialog" aria-label="Command bar">
+        <input ref={ref} value={q} placeholder="Jump to a screen, a preset, or ask the agent" aria-label="Command"
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") { e.preventDefault(); onClose(); }
+            else if (e.key === "ArrowDown") { e.preventDefault(); setI((n) => Math.min(items.length - 1, n + 1)); }
+            else if (e.key === "ArrowUp") { e.preventDefault(); setI((n) => Math.max(0, n - 1)); }
+            else if (e.key === "Enter") { e.preventDefault(); run(items.length ? i : -1); }
+          }} />
+        <ul>
+          {items.map((it, n) => (
+            <li key={it.kind + it.id}><button type="button" aria-selected={n === i} onMouseEnter={() => setI(n)} onClick={() => run(n)}>{it.kind === "tab" ? "Screen" : "Preset"} · {it.label}</button></li>
+          ))}
+          {q.trim() ? <li><button type="button" aria-selected={items.length === 0} onClick={() => { onAsk(q.trim()); onClose(); }}>Ask · {q.trim()}</button></li> : null}
+        </ul>
+      </div>
+    </>
+  );
+}
+
+export function AgentPanel({ chat, onAsk, onClose }: { chat: ChatMsg[]; onAsk: (q: string) => void; onClose: () => void }) {
+  const ref = useRef<HTMLInputElement>(null);
+  const log = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (log.current) log.current.scrollTop = log.current.scrollHeight; });
+  return (
+    <>
+      <div className="panel-back lg:hidden" onClick={onClose} />
+      <aside className="panel" role="dialog" aria-label="Agent panel">
+        <header>
+          <b className="font-semibold">Agent</b>
+          <span className="muted text-[12px] ml-auto">Same conversation</span>
+          <button type="button" className="icon-btn" aria-label="Close agent panel" onClick={onClose}>×</button>
+        </header>
+        <div className="log" ref={log}>
+          {chat.length ? chat.map((m, i) => m.me !== undefined
+            ? <div key={i} className="msg me">{m.me}</div>
+            : <div key={i} className={`msg bot ${m.bot?.type || ""}`}>{m.streaming ? <span className="cursor">{m.bot?.text}</span> : m.bot?.text}</div>)
+            : <p className="muted text-[13px]">Ask from here or from the Agent screen. Answers stay in one thread.</p>}
+        </div>
+        <form onSubmit={(e) => { e.preventDefault(); const q = ref.current?.value.trim(); if (q) { onAsk(q); ref.current!.value = ""; } }}>
+          <input ref={ref} className="flex-1" aria-label="Ask from the panel" placeholder="Ask about adoption" />
+          <button className="btn" type="submit">Ask</button>
+        </form>
+      </aside>
+    </>
+  );
+}
