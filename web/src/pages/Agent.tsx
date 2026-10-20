@@ -34,7 +34,7 @@ function Bubble({ m, i }: { m: ChatMsg; i: number }) {
         {typeof b.confidence === "number" ? <span className="tag lat" data-testid="confidence" title={b.confidence_basis || ""}>confidence {Math.round(b.confidence * 100)}%</span> : null}
       </div>
       {b.followup ? <div className="fu" data-testid="followup">Follow-up, read as: "{b.followup.interpreted_as}"</div> : null}
-      {m.streaming ? <div id="stream-text" className="cursor">{b.text}</div> : <div>{b.text}</div>}
+      {m.streaming ? <div id="stream-text" className="cursor">{b.text || <span className="dots"><i /><i /><i /></span>}</div> : <div>{b.text}</div>}
       {b.safe_alternative ? <div className="mt-1.5"><b>Safe alternative:</b> {b.safe_alternative}</div> : null}
       {b.options && b.options.length ? <div className="chips mt-2">{b.options.map((o: J, k: number) => <button key={k} className="ghost" data-testid={`opt-${k + 1}`} onClick={() => ask(o.q)}>{o.label}</button>)}</div> : null}
       {b.suggestions && b.suggestions.length ? <div className="chips mt-2">{b.suggestions.map((s: string, k: number) => <button key={k} className="ghost" data-testid={`sugg-${k + 1}`} onClick={() => ask(s)}>{s}</button>)}</div> : null}
@@ -73,8 +73,8 @@ export default function Agent() {
   const chip = (i: number) => <button key={i} className="ghost" data-testid={`gq-${i + 1}`} onClick={() => ask(SUGG[i])}>{i < 21 ? "Q" + String(i + 1).padStart(2, "0") + " " : ""}{SUGG[i]}</button>;
   const submit = (e: FormEvent) => { e.preventDefault(); const q = input.current!.value.trim(); if (q) { ask(q); input.current!.value = ""; } };
   return (
-    <>
-      <Header title="Adoption Insights Agent">Read-only. Cites metric ID, version and data-as-of, shows the SQL it ran, and refuses unsafe asks with a safe alternative. Persona: {personaLabel}.</Header>
+    <div className="agent-frame">
+      <Header title="Adoption Insights Agent">Read-only. Each answer names the metric, its version and the data-as-of date. Unsafe questions are refused. Persona: {personaLabel}.</Header>
       {/* 6 grouped golden questions by default; "Show all 22" lists every chip (same gq-N testids, same order as v1). */}
       {all ? (
         <div className="chips">{SUGG.map((_s, i) => chip(i))}</div>
@@ -84,17 +84,17 @@ export default function Agent() {
         </div>
       )}
       <button type="button" className="ghost mt-3 !text-[12px] !py-1" data-testid="gq-toggle" aria-expanded={all} onClick={() => setAll((v) => !v)}>{all ? "Show fewer" : "Show all 22"}</button>
-      <div className="tile !py-2.5 mt-4 mb-3 text-[13px]">Role: <b data-testid="role-now">{personaLabel}</b> | Brain: <b id="brain" data-testid="brain" title={brainTip}>{brain}</b> <span className="muted text-[12px]">Safety guards are always rules-based; the brain only picks a governed tool, numbers come from SQL.</span></div>
+      <p className="agent-status">Role: <b data-testid="role-now">{personaLabel}</b> · Brain: <b id="brain" data-testid="brain" title={brainTip}>{brain}</b> <span className="muted">Guards stay on. Numbers come from SQL.</span></p>
       <div className="chat" id="chat" data-testid="chat" ref={box}>
         {chat.length ? chat.map((m, i) => m.me !== undefined
           ? <div key={i} className="msg me">{m.as ? <span className="text-[11px] text-[#D1D5DB]">asked as {m.as}: </span> : null}{m.me}</div>
           : <Bubble key={i} m={m} i={i} />)
-          : <div className="muted">Click a golden question or type your own. Follow-ups work too: ask about utilisation, then "and Region B?".</div>}
+          : <div className="muted">Pick a question, or type your own. A follow-up works after that.</div>}
       </div>
-      <form id="askf" className="composer" onSubmit={submit}>
-        <input id="askq" data-testid="ask-input" ref={input} className="flex-1" placeholder="Ask about adoption, value or reliability" aria-label="Ask the agent" />
+      <form id="askf" className="composer glass copilot-dock" onSubmit={submit}>
+        <input id="askq" data-testid="ask-input" ref={input} className="flex-1" placeholder="Ask about this dataset" aria-label="Ask the agent" />
         <button className="btn" data-testid="ask-btn">Ask</button>
       </form>
-    </>
+    </div>
   );
 }

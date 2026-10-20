@@ -13,7 +13,7 @@ export function Toasts({ items }: { items: { id: number; text: string }[] }) {
 export function ShortcutSheet({ onClose }: { onClose: () => void }) {
   const rows: [string, string][] = [
     ["⌘K / Ctrl+K", "Command bar"],
-    ["⌘J / Ctrl+J", "Agent panel"],
+    ["⌘J / Ctrl+J", "Agent bar"],
     ["1 – 8", "Scenario presets"],
     ["T", "Theme"],
     ["?", "This sheet"],
@@ -78,30 +78,51 @@ export function CommandBar({ tabs, scen, onTab, onPreset, onAsk, onClose }: {
   );
 }
 
-export function AgentPanel({ chat, onAsk, onClose }: { chat: ChatMsg[]; onAsk: (q: string) => void; onClose: () => void }) {
+export function CopilotBar({ open, chat, onAsk, onOpenThread, onOpen, onToggle }: {
+  open: boolean;
+  chat: ChatMsg[];
+  onAsk: (q: string) => void;
+  onOpenThread: () => void;
+  onOpen: () => void;
+  onToggle: () => void;
+}) {
   const ref = useRef<HTMLInputElement>(null);
   const log = useRef<HTMLDivElement>(null);
   useEffect(() => { if (log.current) log.current.scrollTop = log.current.scrollHeight; });
   return (
-    <>
-      <div className="panel-back lg:hidden" onClick={onClose} />
-      <aside className="panel" role="dialog" aria-label="Agent panel">
-        <header>
-          <b className="font-semibold">Agent</b>
-          <span className="muted text-[12px] ml-auto">Same conversation</span>
-          <button type="button" className="icon-btn" aria-label="Close agent panel" onClick={onClose}>×</button>
-        </header>
-        <div className="log" ref={log}>
-          {chat.length ? chat.map((m, i) => m.me !== undefined
-            ? <div key={i} className="msg me">{m.me}</div>
-            : <div key={i} className={`msg bot ${m.bot?.type || ""}`}>{m.streaming ? <span className="cursor">{m.bot?.text}</span> : m.bot?.text}</div>)
-            : <p className="muted text-[13px]">Ask from here or from the Agent screen. Answers stay in one thread.</p>}
+    <div className={`copilot ${open ? "open" : ""}`}>
+      {open ? (
+        <div className="copilot-sheet glass" role="dialog" aria-label="Agent">
+          <header>
+            <b>Agent</b>
+            <span className="muted">Same thread as the Agent screen</span>
+            <button type="button" className="ghost" onClick={onOpenThread}>Open thread</button>
+            <button type="button" className="icon-btn" aria-label="Collapse agent" onClick={onToggle}>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M4 6.5 8 10.5 12 6.5" /></svg>
+            </button>
+          </header>
+          <div className="log" ref={log}>
+            {chat.length ? chat.map((m, i) => m.me !== undefined
+              ? <div key={i} className="msg me">{m.me}</div>
+              : <div key={i} className={`msg bot ${m.bot?.type || ""}`}>{m.streaming ? <span className="cursor">{m.bot?.text || <span className="dots"><i /><i /><i /></span>}</span> : m.bot?.text}</div>)
+              : <p className="muted">Ask about adoption, value, or reliability.</p>}
+          </div>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); const q = ref.current?.value.trim(); if (q) { onAsk(q); ref.current!.value = ""; } }}>
-          <input ref={ref} className="flex-1" aria-label="Ask from the panel" placeholder="Ask about adoption" />
-          <button className="btn" type="submit">Ask</button>
-        </form>
-      </aside>
-    </>
+      ) : null}
+      <form className="composer glass copilot-pill" onSubmit={(e) => {
+        e.preventDefault();
+        const q = ref.current?.value.trim();
+        if (!q) return;
+        onAsk(q);
+        ref.current!.value = "";
+        onOpen();
+      }}>
+        <button type="button" className="icon-btn" aria-label={open ? "Collapse agent" : "Expand agent"} aria-expanded={open} onClick={onToggle}>
+          <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 3.5h7.5a2 2 0 0 1 2 2V12L10 9.5H3a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z" /></svg>
+        </button>
+        <input ref={ref} aria-label="Ask from the bar" placeholder="Ask about this dataset" onFocus={onOpen} />
+        <button className="btn" type="submit">Ask</button>
+      </form>
+    </div>
   );
 }

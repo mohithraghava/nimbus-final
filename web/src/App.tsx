@@ -6,7 +6,7 @@ import * as C from "./api/client";
 import type { J } from "./lib/api";
 import { AppCtx, GROUPS, TABS, type ChatMsg, type Ctx, type Tab } from "./lib/store";
 import { LineageModal, WhyModal } from "./components/Explain";
-import { AgentPanel, CommandBar, ShortcutSheet, Toasts } from "./components/chrome";
+import { CommandBar, CopilotBar, ShortcutSheet, Toasts } from "./components/chrome";
 import { cap } from "./lib/format";
 import { Skeleton } from "./components/ui";
 import Data from "./pages/Data";
@@ -118,8 +118,8 @@ export default function App() {
     setWhyM({ m, L });
   }, []);
 
-  const ask = useCallback(async (q: string, as?: string) => {
-    if (tabRef.current !== "agent") show("agent");
+  const ask = useCallback(async (q: string, as?: string, stay?: boolean) => {
+    if (!stay && tabRef.current !== "agent") show("agent");
     const persona = as || personaRef.current, CHAT = chatRef.current, ST = stRef.current;
     CHAT.push({ me: q, as: persona !== personaRef.current ? persona : null });
     const m: ChatMsg = { bot: { type: "answer", text: "", citations: [], mode: "...", data_as_of: ST.data_as_of }, streaming: true, q, persona };
@@ -193,7 +193,7 @@ export default function App() {
             </div>
           </div>
           <div className="top-actions">
-            <span className="pill">data: synthetic</span>
+            <span className="pill">Synthetic</span>
             <button type="button" className="icon-btn" aria-label={darkOn ? "Switch to light theme" : "Switch to dark theme"} title="Theme (T)" onClick={toggleTheme}>
               {darkOn ? (
                 <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="8" cy="8" r="3" /><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" /></svg>
@@ -204,7 +204,7 @@ export default function App() {
             <button type="button" className="icon-btn" aria-label="Open command bar" title="Command (⌘K)" onClick={() => setCmd(true)}>
               <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="7" cy="7" r="4.2" /><path d="M10.2 10.2 13.5 13.5" /></svg>
             </button>
-            <button type="button" className="icon-btn" aria-label="Open agent panel" aria-pressed={panel} title="Agent panel (⌘J)" onClick={() => setPanel((v) => !v)}>
+            <button type="button" className="icon-btn" aria-label="Open agent" aria-pressed={panel || tab === "agent"} title="Agent (⌘J)" onClick={() => { if (tab === "agent") return; setPanel((v) => !v); }}>
               <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 3.5h7.5a2 2 0 0 1 2 2V12L10 9.5H3a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z" /></svg>
             </button>
           </div>
@@ -244,7 +244,7 @@ export default function App() {
             <nav id="tabs" aria-label="Screens">
               {GROUPS.map(([g, ts]) => (
                 <div key={g} className="flex lg:flex-col gap-0.5">
-                  <div className="eyebrow px-3">{g}</div>
+                  <div className="nav-group px-3">{g}</div>
                   {ts.map((k) => (
                     <button key={k} data-tab={k} id={`tab-${k}`} onClick={() => show(k)} aria-current={tab === k ? "page" : undefined} className={`nav-item ${tab === k ? "on" : ""}`} title={LABEL[k]}>
                       <span className="nav-glyph" aria-hidden="true">{LABEL[k].slice(0, 1)}</span>
@@ -267,7 +267,7 @@ export default function App() {
         <footer className="muted px-6 py-5 text-[12px] text-center border-t border-line">Read-only. Every number is synthetic and labelled; thresholds and weights are placeholders to agree. Metric version <span id="ver">v1.0</span>. Built by Gowtham S.</footer>
       </div>
       {cmd ? <CommandBar tabs={TABS} scen={SCEN} onTab={show} onPreset={loadScenario} onAsk={ask} onClose={() => setCmd(false)} /> : null}
-      {panel ? <AgentPanel chat={chatRef.current} onAsk={ask} onClose={() => setPanel(false)} /> : null}
+      {tab !== "agent" ? <CopilotBar open={panel} chat={chatRef.current} onAsk={(q) => ask(q, undefined, true)} onOpenThread={() => { setPanel(false); show("agent"); }} onOpen={() => setPanel(true)} onToggle={() => setPanel((v) => !v)} /> : null}
       {help ? <ShortcutSheet onClose={() => setHelp(false)} /> : null}
       <Toasts items={toasts} />
       {lin ? <LineageModal L={lin} onClose={() => setLin(null)} /> : null}
