@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import * as C from "../api/client";
 import type { J } from "../lib/api";
 import { useApp } from "../lib/store";
-import { FileField, Header } from "../components/ui";
+import { FileField, Header, Skeleton } from "../components/ui";
 import { capFirst, fmtTs, hideHosts } from "../lib/format";
 
 const sc = (x: J) => (x ? `${x.passed}/${x.total}` : "-");
@@ -57,7 +57,7 @@ export default function Models() {
           </>
         ) : null}
       </div>
-      {!M ? <div id="mdl" className="muted">Loading...</div> : (
+      {!M ? <div id="mdl"><Skeleton /><p className="muted mt-2">Loading...</p></div> : (
         <>
           <div className="tile !p-0 overflow-auto">
             <table data-testid="models" className="[&_th]:!px-3 [&_td]:!px-3">

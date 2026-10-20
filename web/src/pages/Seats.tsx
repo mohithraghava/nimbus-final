@@ -1,13 +1,13 @@
 import { useEffect, useState, type FormEvent } from "react";
 import * as C from "../api/client";
 import type { J } from "../lib/api";
-import { FileField, Header, Kpi } from "../components/ui";
+import { FileField, Header, Kpi, Skeleton } from "../components/ui";
 import { plural, sentences } from "../lib/format";
 
 export default function Seats() {
   const [r, setR] = useState<J>(null), [x, setX] = useState<J>(null), [msg, setMsg] = useState("");
   useEffect(() => { C.getReclaim().then(setR); }, []);
-  if (!r) return null;
+  if (!r) return <Skeleton rows={5} />;
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try { setX(await C.reconcile(new FormData(e.currentTarget))); } catch (y) { setMsg("Rejected: " + (y as Error).message); }

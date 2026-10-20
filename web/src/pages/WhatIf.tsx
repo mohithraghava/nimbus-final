@@ -48,7 +48,7 @@ export default function WhatIf() {
       </div>
       <div id="w-out" className="mt-4">
         {liveMsg ? <p className="muted mt-4 text-[13px]" data-testid="w-live">{liveMsg} Recorded combinations: 20 seats with nothing else changed, or 25 seats with connector failures fixed and ID coverage at 60%.</p> : null}
-        {w ? <><div className="grid gap-3" data-testid="w-result" style={{ gridTemplateColumns: "1fr 1fr" }}>{col("Today", w.before)}{col("What-if", w.after)}</div><p className="muted mt-3 text-[13px]">{w.label}</p></> : null}
+        {w ? <><div className="grid gap-3 md:grid-cols-2" data-testid="w-result">{col("Today", w.before)}{col("What-if", w.after)}</div><p className="muted mt-3 text-[13px]">{w.label}</p></> : null}
       </div>
     </>
   );

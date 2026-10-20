@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import * as C from "../api/client";
 import type { J } from "../lib/api";
 import { fmt, oc } from "../lib/format";
-import { Header } from "../components/ui";
+import { Header, Skeleton } from "../components/ui";
 
 const NUM = "!text-right tabular-nums whitespace-nowrap";
 
@@ -12,7 +12,7 @@ export default function Compare() {
   return (
     <>
       <Header title="Scenario compare">All 8 synthetic scenarios through the same pipeline and renewal rules.</Header>
-      {!rows ? <div id="cmp" className="muted">Computing...</div> : (
+      {!rows ? <div id="cmp"><Skeleton /><p className="muted mt-2">Computing...</p></div> : (
         <div className="tile !p-0 overflow-auto">
           <table data-testid="compare">
             <tbody>

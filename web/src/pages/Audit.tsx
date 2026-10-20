@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import * as C from "../api/client";
 import type { J } from "../lib/api";
-import { Header } from "../components/ui";
+import { Header, Skeleton } from "../components/ui";
 import { fmtTs } from "../lib/format";
 
 /* Every cell is rendered as text (React escapes), so a hostile persona string never runs. */
 export default function Audit() {
   const [A, setA] = useState<J[] | null>(null);
   useEffect(() => { C.getAudit().then(setA); }, []);
-  if (!A) return null;
+  if (!A) return <Skeleton />;
   return (
     <>
       <Header title="Audit log">Every agent question is logged: time, dataset, persona, outcome, metrics cited, mode.</Header>

@@ -1,7 +1,7 @@
 import type { J } from "../lib/api";
 import { useApp } from "../lib/store";
 import { fmt } from "../lib/format";
-import { Header, Kpi } from "../components/ui";
+import { Bars, Header, Kpi } from "../components/ui";
 import PipelineSummary from "./Pipeline";
 
 export default function Eng() {
@@ -17,6 +17,10 @@ export default function Eng() {
         <Kpi id="M20" label={M.M20.label} val={fmt(M.M20.value, "%")} sub={M.M20.note} />
       </div>
       <h2>Agents (registry + build type)</h2>
+      <div className="tile mb-4">
+        <Bars legend={[["M11 failure rate", "accent"], ["M10 error rate", "navy"]]} max={100}
+          rows={ST.agents.flatMap((a: J) => [[a.agent + " M11", Number(a.M11) || 0, fmt(a.M11, "%"), "accent"] as [string, number, string, "accent"], [a.agent + " M10", Number(a.M10) || 0, fmt(a.M10, "%"), "navy"] as [string, number, string, "navy"]])} />
+      </div>
       <div className="tile !p-0 overflow-auto">
         <table>
           <tbody>

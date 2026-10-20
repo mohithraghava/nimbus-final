@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as C from "../api/client";
 import type { J } from "../lib/api";
 import { hideRefs, keyLabel, keyValue, money, sentenceTags, symbols } from "../lib/format";
-import { Header } from "../components/ui";
+import { Header, Skeleton } from "../components/ui";
 
 export default function Cost() {
   const [M, setM] = useState<J>(null), [r, setR] = useState<J>(null), [err, setErr] = useState(""), [rulesV, setRulesV] = useState("");
@@ -15,7 +15,7 @@ export default function Cost() {
   }, []);
   useEffect(() => { C.getCostMeta().then(setM); }, []);
   useEffect(() => { if (M) run(); }, [M, run]);
-  if (!M) return null;
+  if (!M) return <Skeleton rows={5} />;
   const d = M.defaults;
   const A = "tag ml-1";
   return (

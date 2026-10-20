@@ -15,7 +15,7 @@ const brainText = (b: J) => b.kind === "ollama" ? "Open model: " + b.ollama_mode
   : "Rules engine (open model offline)";   // v1 named the Ollama host here; it is in the tooltip now
 
 function Bubble({ m, i }: { m: ChatMsg; i: number }) {
-  const { ask, why, redraw, chat } = useApp(); const b = m.bot;
+  const { ask, why, redraw, chat, toast } = useApp(); const b = m.bot;
   const fb = (rating: string) => {
     if (m.fb) return;
     C.sendFeedback({ question: m.q as string, answer: b.text, rating, brain: b.brain || "", mode: b.mode || "", intent: b.intent || "", type: b.type || "", persona: b.persona || m.persona })
@@ -27,6 +27,7 @@ function Bubble({ m, i }: { m: ChatMsg; i: number }) {
       <div className="mb-1.5">
         <span className="tag">{TYPE[b.type] || b.type}</span>
         <span className={`tag b-${b.brain || "rules"}`} data-testid="brain-tag">{BRAIN[b.brain] || b.brain || "..."}</span>
+        {!m.streaming && b.brain ? <span className="tag">{b.brain === "rules" ? "Rules fallback" : "Model"}</span> : null}
         <span className="tag">{b.mode}</span>
         {b.answered_by ? <span className="tag b-src" data-testid="answered-by" title={b.remote_fallback || ""}>answered by {b.answered_by}</span> : null}
         {b.latency_ms !== undefined ? <span className="tag lat" data-testid="latency">{b.latency_ms} ms</span> : null}
@@ -39,10 +40,16 @@ function Bubble({ m, i }: { m: ChatMsg; i: number }) {
       {b.suggestions && b.suggestions.length ? <div className="chips mt-2">{b.suggestions.map((s: string, k: number) => <button key={k} className="ghost" data-testid={`sugg-${k + 1}`} onClick={() => ask(s)}>{s}</button>)}</div> : null}
       {m.streaming ? null : (
         <>
-          <div className="muted text-[12px] mt-2">{cites.map((x: J) => `${x.metric} ${x.version}`).join(", ")}{cites.length ? " | " : ""}data as of {b.data_as_of} | synthetic</div>
+          <div className="cite-line">{cites.length ? cites.map((x: J, k: number) => <span key={k}>{x.metric} {x.version}</span>) : null}<span>data as of {b.data_as_of}</span><span>synthetic</span></div>
           {b.sql ? <details className="mt-1"><summary className="muted cursor-pointer text-[12px]">SQL used</summary><pre className="mt-1">{b.sql}</pre></details> : null}
           <div className="acts">
             {b.type !== "clarify" && cites.length ? <button className="ghost" data-testid="why-btn" onClick={() => why(chat[i])}>Why this number?</button> : null}
+            {cites.length ? <button type="button" className="ghost" onClick={() => {
+              const line = cites.map((x: J) => `${x.metric} ${x.version}`).join(", ") + " | data as of " + b.data_as_of;
+              const done = () => toast("Citation copied");
+              if (navigator.clipboard?.writeText) navigator.clipboard.writeText(line).then(done).catch(() => toast("Couldn't copy citation"));
+              else toast("Couldn't copy citation");
+            }}>Copy citation</button> : null}
             <button className={`ghost ${m.fb === "up" ? "sel" : ""}`} data-testid="fb-up" title="Good answer" aria-label="Good answer" disabled={!!m.fb} onClick={() => fb("up")}>&#128077;</button>
             <button className={`ghost ${m.fb === "down" ? "sel" : ""}`} data-testid="fb-down" title="Wrong or unhelpful" aria-label="Wrong or unhelpful" disabled={!!m.fb} onClick={() => fb("down")}>&#128078;</button>
             {m.fb ? <span className="muted" data-testid="fb-done">Thanks, saved locally for review</span> : null}
