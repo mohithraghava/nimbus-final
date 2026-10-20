@@ -4,8 +4,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>NimbusPay Adoption Insights (live product)</title>
-    <script type="module" crossorigin src="/assets/index-DvrR12im.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BYq065Fx.css">
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("np-theme");
+          var dark = t === "dark" || (t !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) document.documentElement.classList.add("dark");
+          document.documentElement.dataset.theme = dark ? "dark" : "light";
+        } catch (e) {}
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-Ck-J2rsF.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DJFEu7n_.css">
   </head>
   <body>
     <div id="root"></div>
