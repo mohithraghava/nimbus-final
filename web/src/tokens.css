@@ -1,0 +1,80 @@
+/* NimbusPay Adoption Insights — design tokens.
+   Light + dark. Components read these variables; do not hard-code palette values in screens. */
+
+:root {
+  color-scheme: light;
+  --np-canvas: #F7F7F5;
+  --np-surface: #FFFFFF;
+  --np-elevated: #FFFFFF;
+  --np-ink: #16181D;
+  --np-heading: #0B2E59;
+  --np-slate: #334155;
+  --np-text-2: #4B5563;
+  --np-text-3: #6B7280;
+  --np-muted: #4B5563;
+  --np-line: #E3E3DF;
+  --np-line-strong: #D2D2CC;
+  --np-track: #EEEDE8;
+  --np-grid: rgba(22, 24, 29, 0.08);
+  --np-tag: #F3F2EE;
+  --np-accent: #C2410C;
+  --np-accent-fill: #E8751A;
+  --np-accent-press: #C2410C;
+  --np-accent-soft: #FDF0E4;
+  --np-navy: #0B2E59;
+  --np-series-2: #0B2E59;
+  --np-series-3: #64748B;
+  --np-verified: #166534;
+  --np-verified-fill: #16A34A;
+  --np-warning: #B45309;
+  --np-warning-fill: #D97706;
+  --np-critical: #DC2626;
+  --np-critical-fill: #DC2626;
+  --np-danger-soft: #FEF2F2;
+  --np-shadow: 0 1px 2px rgba(22, 24, 29, 0.04), 0 8px 24px rgba(22, 24, 29, 0.05);
+  --np-shadow-pop: 0 16px 50px rgba(22, 24, 29, 0.16);
+  --np-glass: color-mix(in srgb, #FFFFFF 78%, transparent);
+  --np-radius-card: 14px;
+  --np-radius-control: 10px;
+  --np-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --np-fast: 200ms;
+  --np-base: 280ms;
+  --np-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, sans-serif;
+  --np-mono: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Consolas, monospace;
+  --np-space: 8px;
+}
+
+html.dark {
+  color-scheme: dark;
+  --np-canvas: #0E0F12;
+  --np-surface: #16181D;
+  --np-elevated: #1E2026;
+  --np-ink: #F5F5F4;
+  --np-heading: #F5F5F4;
+  --np-slate: #CBD5E1;
+  --np-text-2: #A1A1AA;
+  --np-text-3: #A1A1AA;
+  --np-muted: #A1A1AA;
+  --np-line: rgba(255, 255, 255, 0.08);
+  --np-line-strong: rgba(255, 255, 255, 0.14);
+  --np-track: rgba(255, 255, 255, 0.06);
+  --np-grid: rgba(255, 255, 255, 0.06);
+  --np-tag: rgba(255, 255, 255, 0.06);
+  --np-accent: #E8751A;
+  --np-accent-fill: #E8751A;
+  --np-accent-press: #C2410C;
+  --np-accent-soft: rgba(232, 117, 26, 0.16);
+  --np-navy: #0B2E59;
+  --np-series-2: #93B4E8;
+  --np-series-3: #A1A1AA;
+  --np-verified: #4ADE80;
+  --np-verified-fill: #16A34A;
+  --np-warning: #FBBF24;
+  --np-warning-fill: #D97706;
+  --np-critical: #FCA5A5;
+  --np-critical-fill: #DC2626;
+  --np-danger-soft: rgba(220, 38, 38, 0.14);
+  --np-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 28px rgba(0, 0, 0, 0.28);
+  --np-shadow-pop: 0 18px 60px rgba(0, 0, 0, 0.5);
+  --np-glass: color-mix(in srgb, #16181D 78%, transparent);
+}
