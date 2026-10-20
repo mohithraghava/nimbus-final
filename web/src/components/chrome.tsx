@@ -1,6 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChatMsg, Tab } from "../lib/store";
 
+function motionMs() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 220;
+}
+
+function usePresence(open: boolean) {
+  const [present, setPresent] = useState(open);
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => {
+    if (open) { setPresent(true); setLeaving(false); return; }
+    setLeaving(true);
+    const t = window.setTimeout(() => { setPresent(false); setLeaving(false); }, motionMs());
+    return () => window.clearTimeout(t);
+  }, [open]);
+  return { present, leaving };
+}
+
 export function Toasts({ items }: { items: { id: number; text: string }[] }) {
   if (!items.length) return null;
   return (
@@ -10,7 +26,8 @@ export function Toasts({ items }: { items: { id: number; text: string }[] }) {
   );
 }
 
-export function ShortcutSheet({ onClose }: { onClose: () => void }) {
+export function ShortcutSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { present, leaving } = usePresence(open);
   const rows: [string, string][] = [
     ["⌘K / Ctrl+K", "Command bar"],
     ["⌘J / Ctrl+J", "Agent bar"],
@@ -19,8 +36,9 @@ export function ShortcutSheet({ onClose }: { onClose: () => void }) {
     ["?", "This sheet"],
     ["Esc", "Close"],
   ];
+  if (!present) return null;
   return (
-    <div className="modal" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className={`modal ${leaving ? "leaving" : ""}`} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="tile" style={{ maxWidth: 420, width: "92%" }} role="dialog" aria-label="Keyboard shortcuts">
         <h2 className="!mt-0">Keyboard</h2>
         <table><tbody>{rows.map(([k, v]) => <tr key={k}><td><span className="help-k">{k}</span></td><td>{v}</td></tr>)}</tbody></table>
@@ -30,7 +48,8 @@ export function ShortcutSheet({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function CommandBar({ tabs, scen, onTab, onPreset, onAsk, onClose }: {
+export function CommandBar({ open, tabs, scen, onTab, onPreset, onAsk, onClose }: {
+  open: boolean;
   tabs: [Tab, string][];
   scen: { key: string; label: string }[];
   onTab: (t: Tab) => void;
@@ -38,6 +57,7 @@ export function CommandBar({ tabs, scen, onTab, onPreset, onAsk, onClose }: {
   onAsk: (q: string) => void;
   onClose: () => void;
 }) {
+  const { present, leaving } = usePresence(open);
   const [q, setQ] = useState("");
   const [i, setI] = useState(0);
   const ref = useRef<HTMLInputElement>(null);
@@ -47,7 +67,7 @@ export function CommandBar({ tabs, scen, onTab, onPreset, onAsk, onClose }: {
     const presets = scen.filter((x) => !s || x.label.toLowerCase().includes(s) || x.key.includes(s)).map((x) => ({ kind: "preset" as const, id: x.key, label: x.label }));
     return [...screens, ...presets].slice(0, 12);
   }, [q, tabs, scen]);
-  useEffect(() => { ref.current?.focus(); }, []);
+  useEffect(() => { if (present && !leaving) ref.current?.focus(); }, [present, leaving]);
   useEffect(() => { setI(0); }, [q]);
   const run = (idx: number) => {
     const it = items[idx];
@@ -55,10 +75,11 @@ export function CommandBar({ tabs, scen, onTab, onPreset, onAsk, onClose }: {
     if (it?.kind === "preset") { onPreset(it.id); onClose(); return; }
     if (q.trim()) { onAsk(q.trim()); onClose(); }
   };
+  if (!present) return null;
   return (
     <>
-      <div className="cmd-back" onClick={onClose} />
-      <div className="cmd" role="dialog" aria-label="Command bar">
+      <div className={`cmd-back ${leaving ? "leaving" : ""}`} onClick={onClose} />
+      <div className={`cmd ${leaving ? "leaving" : ""}`} role="dialog" aria-label="Command bar">
         <input ref={ref} value={q} placeholder="Jump to a screen, a preset, or ask the agent" aria-label="Command"
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => {
@@ -88,11 +109,12 @@ export function CopilotBar({ open, chat, onAsk, onOpenThread, onOpen, onToggle }
 }) {
   const ref = useRef<HTMLInputElement>(null);
   const log = useRef<HTMLDivElement>(null);
+  const { present, leaving } = usePresence(open);
   useEffect(() => { if (log.current) log.current.scrollTop = log.current.scrollHeight; });
   return (
     <div className={`copilot ${open ? "open" : ""}`}>
-      {open ? (
-        <div className="copilot-sheet glass" role="dialog" aria-label="Agent">
+      {present ? (
+        <div className={`copilot-sheet glass ${leaving ? "leaving" : ""}`} role="dialog" aria-label="Agent">
           <header>
             <b>Agent</b>
             <span className="muted">Same thread as the Agent screen</span>

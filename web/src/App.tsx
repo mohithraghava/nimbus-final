@@ -214,10 +214,10 @@ export default function App() {
             <div className="roles flex items-center min-w-0 max-w-full" data-testid="role-switch" title="Role switch: scope is enforced on the server, the UI only sends the role name">
               <div className="inline-flex items-center gap-0.5 max-w-full overflow-x-auto">
                 {SEGMENTS.map((r) => (
-                  <button key={r} type="button" data-role={r} data-testid={`role-${r}`} onClick={() => setPersona(r)} aria-pressed={persona === r}
+                  <button key={r} type="button" data-role={r} data-testid={`role-${r}`} onClick={() => { if (persona === r) return; setPersona(r); toast(personas?.[r] || cap(r)); }} aria-pressed={persona === r}
                     className={`role px-3 py-1 min-h-[44px] sm:min-h-0 rounded-full text-[14px] whitespace-nowrap ${persona === r ? "on" : "text-muted"}`}>{cap(r)}</button>
                 ))}
-                <select id="persona" data-testid="persona" aria-label="More roles" value={SEGMENTS.includes(persona) ? "" : persona} onChange={(e) => e.target.value && setPersona(e.target.value)}
+                <select id="persona" data-testid="persona" aria-label="More roles" value={SEGMENTS.includes(persona) ? "" : persona} onChange={(e) => { const v = e.target.value; if (!v || v === persona) return; setPersona(v); toast(personas?.[v] || v); }}
                   className={`min-h-[44px] sm:min-h-0 !border-0 !rounded-full !py-1 !pl-3 !pr-7 text-[14px] max-w-[150px] bg-transparent ${SEGMENTS.includes(persona) ? "" : "on"}`}>
                   <option value="" disabled>More roles</option>
                   {personas && Object.entries(personas).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -266,9 +266,9 @@ export default function App() {
         </div>
         <footer className="muted px-6 py-5 text-[12px] text-center border-t border-line">Read-only. Every number is synthetic and labelled; thresholds and weights are placeholders to agree. Metric version <span id="ver">v1.0</span>. Built by Gowtham S.</footer>
       </div>
-      {cmd ? <CommandBar tabs={TABS} scen={SCEN} onTab={show} onPreset={loadScenario} onAsk={ask} onClose={() => setCmd(false)} /> : null}
+      <CommandBar open={cmd} tabs={TABS} scen={SCEN} onTab={show} onPreset={loadScenario} onAsk={ask} onClose={() => setCmd(false)} />
       {tab !== "agent" ? <CopilotBar open={panel} chat={chatRef.current} onAsk={(q) => ask(q, undefined, true)} onOpenThread={() => { setPanel(false); show("agent"); }} onOpen={() => setPanel(true)} onToggle={() => setPanel((v) => !v)} /> : null}
-      {help ? <ShortcutSheet onClose={() => setHelp(false)} /> : null}
+      <ShortcutSheet open={help} onClose={() => setHelp(false)} />
       <Toasts items={toasts} />
       {lin ? <LineageModal L={lin} onClose={() => setLin(null)} /> : null}
       {whyM ? <WhyModal m={whyM.m} L={whyM.L} ST={ST} onClose={() => setWhyM(null)} /> : null}

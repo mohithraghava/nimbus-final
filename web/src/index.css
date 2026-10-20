@@ -309,10 +309,8 @@
   #ds { font-size: 13px; color: var(--np-muted); padding: 0 12px; white-space: nowrap; }
 
   .shell-body { display: flex; min-width: 0; align-items: stretch; }
-  .shell-side {
-    width: 228px; flex: none; padding: 8px 12px 32px;
-    background: transparent;
-  }
+  .role { background: transparent; color: var(--np-muted); transition: background 220ms var(--np-ease), color 220ms var(--np-ease); }
+  .shell-side { width: 228px; flex: none; padding: 8px 12px 32px; background: transparent; transition: width 220ms var(--np-ease); }
   .shell-side nav { display: flex; flex-direction: column; gap: 22px; position: sticky; top: 12px; }
   .shell-side button.nav-item {
     display: flex; align-items: center; gap: 10px;
@@ -398,8 +396,13 @@
 @keyframes pop { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 @keyframes msg-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes msg-out { from { opacity: 0; transform: translate(14px, 10px); } to { opacity: 1; transform: none; } }
+  .cmd.leaving { animation: pop-out 220ms var(--np-ease) forwards; }
+  .cmd-back.leaving, .modal.leaving { animation: fade-out 220ms var(--np-ease) forwards; }
+  .copilot-sheet.leaving { animation: sheet-out 220ms var(--np-ease) forwards; }
 @keyframes sheet-in { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: none; } }
-@keyframes dot { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }
+@keyframes sheet-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(14px) scale(0.98); } }
+@keyframes pop-out { from { opacity: 1; transform: translateX(-50%) translateY(0); } to { opacity: 0; transform: translateX(-50%) translateY(10px); } }
+@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
 
 .glass {
   background: color-mix(in srgb, var(--np-surface) 58%, transparent);
