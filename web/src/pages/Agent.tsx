@@ -91,7 +91,7 @@ export default function Agent() {
           : <Bubble key={i} m={m} i={i} />)
           : <div className="muted">Click a golden question or type your own. Follow-ups work too: ask about utilisation, then "and Region B?".</div>}
       </div>
-      <form id="askf" className="flex gap-2 mt-3" onSubmit={submit}>
+      <form id="askf" className="composer" onSubmit={submit}>
         <input id="askq" data-testid="ask-input" ref={input} className="flex-1" placeholder="Ask about adoption, value or reliability" aria-label="Ask the agent" />
         <button className="btn" data-testid="ask-btn">Ask</button>
       </form>

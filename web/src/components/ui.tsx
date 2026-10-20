@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 /* KPI tile. data-metric M\d\d opens "Explain this number" (handled by a document listener in App, as before). */
 export function Kpi({ id, label, val, sub = "", eyebrow }: { id: string; label: string; val: ReactNode; sub?: string; eyebrow?: string }) {
@@ -57,22 +57,7 @@ export function Subnav({ items }: { items: { id: string; label: string }[] }) {
 
 /* Decorative count-up. The visible text animates; do not use on values tests read immediately. */
 export function CountUp({ n }: { n: number }) {
-  const [v, setV] = useState(0);
-  useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) { setV(n); return; }
-    let raf = 0;
-    const t0 = performance.now();
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - t0) / 700);
-      const e = 1 - Math.pow(1 - p, 3);
-      setV(Math.round(n * e));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [n]);
-  return <span className="tabular-nums">{v}</span>;
+  return <span className="tabular-nums">{n}</span>;
 }
 
 export function Skeleton({ rows = 4 }: { rows?: number }) {

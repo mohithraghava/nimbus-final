@@ -29,14 +29,6 @@ const SEGMENTS = ["executive", "manager", "analyst", "guest"];
 const SHORT: Record<string, string> = { baseline: "Baseline", breach: "Breach", healthy: "Healthy", incident: "Incident", newcountry: "New country", noids: "No IDs", overstated: "Overstated", shelfware: "Shelfware" };
 const SID = "s-" + ((window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
 
-function NavIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6">
-      <rect x="2" y="2" width="5" height="5" rx="1.2" /><rect x="9" y="2" width="5" height="5" rx="1.2" /><rect x="2" y="9" width="5" height="5" rx="1.2" /><rect x="9" y="9" width="5" height="5" rx="1.2" />
-    </svg>
-  );
-}
-
 export default function App() {
   const [personas, setPersonas] = useState<Record<string, string> | null>(null);
   const [persona, setPersonaRaw] = useState("");
@@ -96,7 +88,7 @@ export default function App() {
       setSTx(s);
       chatRef.current.length = 0;
       show(tabRef.current === "data" ? "exec" : tabRef.current);
-      toast(s.label ? `Preset · ${s.label}` : "Preset updated");
+      toast(SHORT[k] || k);
     } catch (e) {
       console.error(e);
       toast("Couldn't load that preset");
@@ -192,64 +184,70 @@ export default function App() {
   return (
     <AppCtx.Provider value={ctx}>
       <div className="min-h-screen flex flex-col">
-        <header className="shell-header">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="brand-mark" aria-hidden="true"></span>
-            <div className="min-w-0">
-              <div className="text-[15px] leading-5"><b className="font-semibold" style={{ color: "var(--np-heading)" }}>NimbusPay</b> Adoption Insights</div>
-              <span id="ds" className="muted text-[12px]">{ST ? <><span className="whitespace-nowrap">Dataset: {ST.dataset_label}</span><span className="max-sm:hidden"> · </span><span className="whitespace-nowrap max-sm:block">data as of {ST.data_as_of}</span></> : ""}</span>
+        <header className="topbar">
+          <div className="brand-lock">
+            <span className="brand-badge" aria-hidden="true">N</span>
+            <div>
+              <div className="brand-name">NimbusPay</div>
+              <div className="brand-product">Adoption Insights</div>
             </div>
           </div>
-          <div className="header-tools">
-            <div className="roles flex items-center gap-2 min-w-0 max-w-full" data-testid="role-switch" title="Role switch: scope is enforced on the server, the UI only sends the role name">
-              <span className="eyebrow max-sm:hidden">Role</span>
-              <div className="inline-flex items-center gap-0.5 rounded-control border border-lineStrong p-0.5 bg-surface max-w-full overflow-x-auto">
+          <div className="top-actions">
+            <span className="pill">data: synthetic</span>
+            <button type="button" className="icon-btn" aria-label={darkOn ? "Switch to light theme" : "Switch to dark theme"} title="Theme (T)" onClick={toggleTheme}>
+              {darkOn ? (
+                <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="8" cy="8" r="3" /><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" /></svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M13.5 10.2A5.5 5.5 0 0 1 5.8 2.5 5.5 5.5 0 1 0 13.5 10.2z" /></svg>
+              )}
+            </button>
+            <button type="button" className="icon-btn" aria-label="Open command bar" title="Command (⌘K)" onClick={() => setCmd(true)}>
+              <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="7" cy="7" r="4.2" /><path d="M10.2 10.2 13.5 13.5" /></svg>
+            </button>
+            <button type="button" className="icon-btn" aria-label="Open agent panel" aria-pressed={panel} title="Agent panel (⌘J)" onClick={() => setPanel((v) => !v)}>
+              <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 3.5h7.5a2 2 0 0 1 2 2V12L10 9.5H3a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z" /></svg>
+            </button>
+          </div>
+        </header>
+        <div className="context-wrap">
+          <div className="search-pill">
+            <div className="roles flex items-center min-w-0 max-w-full" data-testid="role-switch" title="Role switch: scope is enforced on the server, the UI only sends the role name">
+              <div className="inline-flex items-center gap-0.5 max-w-full overflow-x-auto">
                 {SEGMENTS.map((r) => (
                   <button key={r} type="button" data-role={r} data-testid={`role-${r}`} onClick={() => setPersona(r)} aria-pressed={persona === r}
-                    className={`role px-2 sm:px-3 py-1 min-h-[44px] sm:min-h-0 rounded-[8px] text-[12px] sm:text-[13px] whitespace-nowrap transition-colors duration-fast ${persona === r ? (r === "guest" ? "on font-semibold" : "on bg-navy text-white font-semibold") : "text-ink hover:bg-canvas"}`}>{cap(r)}</button>
+                    className={`role px-3 py-1 min-h-[44px] sm:min-h-0 rounded-full text-[14px] whitespace-nowrap ${persona === r ? "on" : "text-muted"}`}>{cap(r)}</button>
                 ))}
                 <select id="persona" data-testid="persona" aria-label="More roles" value={SEGMENTS.includes(persona) ? "" : persona} onChange={(e) => e.target.value && setPersona(e.target.value)}
-                  className={`min-h-[44px] sm:min-h-0 !border-0 !rounded-[8px] !py-1 !pl-3 !pr-7 text-[12px] sm:text-[13px] max-w-[124px] sm:max-w-[190px] ${SEGMENTS.includes(persona) ? "!bg-transparent text-ink" : "on !bg-navy !text-white font-semibold"}`}>
+                  className={`min-h-[44px] sm:min-h-0 !border-0 !rounded-full !py-1 !pl-3 !pr-7 text-[14px] max-w-[150px] bg-transparent ${SEGMENTS.includes(persona) ? "" : "on"}`}>
                   <option value="" disabled>More roles</option>
                   {personas && Object.entries(personas).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
             </div>
+            <span className="vdiv" aria-hidden="true" />
             <div className="preset-scroll" role="group" aria-label="Scenario presets">
               {SCEN.map((s: J, n: number) => (
                 <button key={s.key} type="button" data-preset={s.key} aria-pressed={ST?.dataset === s.key} title={s.label} onClick={() => loadScenario(s.key)}>
-                  <span className="muted mr-1">{n + 1}</span>{SHORT[s.key] || s.label}
+                  {n + 1} {SHORT[s.key] || s.label}
                 </button>
               ))}
             </div>
-            <button type="button" className="icon-btn" aria-label={darkOn ? "Switch to light theme" : "Switch to dark theme"} title="Theme (T)" onClick={toggleTheme}>
-              {darkOn ? (
-                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="8" cy="8" r="3" /><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" /></svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M13.5 10.2A5.5 5.5 0 0 1 5.8 2.5 5.5 5.5 0 1 0 13.5 10.2z" /></svg>
-              )}
-            </button>
-            <button type="button" className="icon-btn" aria-label="Open command bar" title="Command (⌘K)" onClick={() => setCmd(true)}>
-              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="7" cy="7" r="4.2" /><path d="M10.2 10.2 13.5 13.5" /></svg>
-            </button>
-            <button type="button" className="icon-btn" aria-label="Open agent panel" aria-pressed={panel} title="Agent panel (⌘J)" onClick={() => setPanel((v) => !v)}>
-              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 3.5h7.5a2 2 0 0 1 2 2V12L10 9.5H3a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z" /></svg>
-            </button>
-            <span className="pill">data: synthetic</span>
+            <span className="vdiv max-md:hidden" aria-hidden="true" />
+            <span id="ds">{ST ? <>Dataset: {ST.dataset_label} · data as of {ST.data_as_of}</> : ""}</span>
           </div>
-        </header>
+        </div>
         <div className="shell-body">
           <div className={`shell-side ${collapsed ? "collapsed" : ""}`}>
             <button type="button" className="icon-btn side-toggle" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} onClick={() => { const n = !collapsed; setCollapsed(n); localStorage.setItem("np-side", n ? "1" : "0"); }}>
-              <NavIcon />
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 4h10M3 8h10M3 12h10" /></svg>
             </button>
             <nav id="tabs" aria-label="Screens">
               {GROUPS.map(([g, ts]) => (
                 <div key={g} className="flex lg:flex-col gap-0.5">
-                  <div className="eyebrow px-3 mb-1">{g}</div>
+                  <div className="eyebrow px-3">{g}</div>
                   {ts.map((k) => (
                     <button key={k} data-tab={k} id={`tab-${k}`} onClick={() => show(k)} aria-current={tab === k ? "page" : undefined} className={`nav-item ${tab === k ? "on" : ""}`} title={LABEL[k]}>
-                      <NavIcon />
+                      <span className="nav-glyph" aria-hidden="true">{LABEL[k].slice(0, 1)}</span>
                       <span className="nav-label">{LABEL[k]}</span>
                     </button>
                   ))}
