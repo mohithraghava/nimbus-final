@@ -169,7 +169,7 @@ export function CopilotBar({ open, chat, onAsk, onOpenThread, onOpen, onToggle }
           <div className="log" ref={log}>
             {chat.length ? chat.map((m, i) => m.me !== undefined
               ? <div key={i} className="msg me">{m.me}</div>
-              : <div key={i} className={`msg bot ${m.bot?.type || ""}`}>{m.streaming ? <span className="cursor">{m.bot?.text || <span className="dots"><i /><i /><i /></span>}</span> : m.bot?.text}</div>)
+              : <div key={i} className={`msg bot ${m.bot?.type || ""}`}>{m.streaming ? <span className="cursor">{m.bot?.text || <span className="dots"><i /><i /><i /></span>}</span> : m.bot?.text}{m.plan && m.plan.state === "pending" ? <button type="button" className="ghost" onClick={onOpenThread}>Review task</button> : null}</div>)
               : <p className="muted">Ask about adoption, value, or reliability.</p>}
           </div>
         </div>

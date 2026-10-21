@@ -7,6 +7,7 @@ import type { J } from "./lib/api";
 import { AppCtx, GROUPS, TABS, type ChatMsg, type Ctx, type Tab } from "./lib/store";
 import { LineageModal, WhyModal } from "./components/Explain";
 import { CommandBar, CopilotBar, ShortcutSheet, SignIn, Toasts } from "./components/chrome";
+import { planFor } from "./lib/tasks";
 import { cap } from "./lib/format";
 import { Skeleton } from "./components/ui";
 import Data from "./pages/Data";
@@ -158,7 +159,12 @@ export default function App() {
         toast("The agent didn't answer");
       }
     }
-    m.streaming = false; redraw();
+    m.streaming = false;
+    if (m.bot && !m.bot.error) {
+      const plan = planFor(q, m.bot.type, m.bot.text);
+      if (plan) m.plan = plan;
+    }
+    redraw();
   }, [redraw, show, toast]);
 
   useEffect(() => {

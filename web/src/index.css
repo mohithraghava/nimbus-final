@@ -484,6 +484,19 @@ html.dark .tile, html.dark .outcard, html.dark .metric-list, html.dark .search-p
 
 @keyframes frame-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .composer.glass { background: color-mix(in srgb, var(--np-surface) 46%, transparent); }
+.task-plan {
+  margin: 0 0 14px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--np-surface) 72%, transparent);
+  border: 1px solid var(--np-line);
+  box-shadow: var(--np-shadow);
+  animation: frame-in 220ms var(--np-ease);
+}
+.task-plan b { display: block; font-size: 16px; letter-spacing: -0.02em; margin-bottom: 4px; }
+.task-plan ol { margin: 10px 0 12px; padding-left: 18px; color: var(--np-muted); font-size: 14px; }
+.task-plan li + li { margin-top: 4px; }
+.task-acts { display: flex; gap: 8px; align-items: center; }
 .app-foot {
   margin-top: auto;
   text-align: right;

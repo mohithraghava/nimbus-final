@@ -15,14 +15,30 @@ const brainText = (b: J) => b.kind === "ollama" ? "Open model: " + b.ollama_mode
   : "Rules engine (open model offline)";   // v1 named the Ollama host here; it is in the tooltip now
 
 function Bubble({ m, i }: { m: ChatMsg; i: number }) {
-  const { ask, why, redraw, chat, toast } = useApp(); const b = m.bot;
+  const { ask, why, redraw, chat, toast, show } = useApp(); const b = m.bot;
   const fb = (rating: string) => {
     if (m.fb) return;
     C.sendFeedback({ question: m.q as string, answer: b.text, rating, brain: b.brain || "", mode: b.mode || "", intent: b.intent || "", type: b.type || "", persona: b.persona || m.persona })
       .then(() => { m.fb = rating; redraw(); }).catch((x) => { m.fbErr = x.message; redraw(); });
   };
+  const runPlan = async () => {
+    const plan = m.plan;
+    if (!plan || plan.state !== "pending") return;
+    plan.state = "running"; redraw();
+    for (const step of plan.steps) {
+      if (step.why) {
+        if ((m.bot?.citations || []).length) await why(chat[i]);
+        else toast("No metric on that answer to explain");
+      }
+      if (step.ask) await ask(step.ask);
+      if (step.tab) show(step.tab as never);
+    }
+    plan.state = "done"; redraw();
+    toast("Task finished. Nothing was changed.");
+  };
   const cites = b.citations || [];
   return (
+    <>
     <div className={`msg bot ${b.type}`} data-testid={m.streaming ? "streaming" : "answer"}>
       <div className="mb-1.5">
         <span className="tag">{TYPE[b.type] || b.type}</span>
@@ -60,6 +76,23 @@ function Bubble({ m, i }: { m: ChatMsg; i: number }) {
         </>
       )}
     </div>
+    {m.plan && m.plan.state !== "cancelled" ? (
+      <div className="task-plan">
+        <p className="eyebrow">Task · rules stay on</p>
+        <b>{m.plan.title}</b>
+        <p className="muted">The answer above already came from the rules engine. Approve only opens screens or asks that same engine again.</p>
+        <ol>
+          {m.plan.steps.map((s) => <li key={s.label}>{s.label}</li>)}
+        </ol>
+        {m.plan.state === "pending" ? (
+          <div className="task-acts">
+            <button type="button" className="btn" onClick={runPlan}>Approve</button>
+            <button type="button" className="ghost" onClick={() => { m.plan!.state = "cancelled"; redraw(); }}>Cancel</button>
+          </div>
+        ) : <p className="muted">{m.plan.state === "running" ? "Running…" : "Done. Nothing was changed."}</p>}
+      </div>
+    ) : null}
+    </>
   );
 }
 
