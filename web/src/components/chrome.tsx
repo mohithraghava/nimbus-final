@@ -17,6 +17,47 @@ function usePresence(open: boolean) {
   return { present, leaving };
 }
 
+const WORKSPACE_ROLES: [string, string][] = [
+  ["Executive", "All regions. The renewal decision."],
+  ["Finance and Procurement", "Cost, seats, and the contract."],
+  ["Manager", "All regions. Team adoption."],
+  ["Analyst", "Region A only."],
+  ["Regional lead", "Region A only."],
+  ["Fraud operations lead", "Region A only."],
+  ["Platform engineer", "Reliability and connectors."],
+  ["Unrecognised", "Least privilege. No numbers."],
+];
+
+export function SignIn({ open, onEnter }: { open: boolean; onEnter: () => void }) {
+  const { present, leaving } = usePresence(open);
+  const email = useRef<HTMLInputElement>(null);
+  if (!present) return null;
+  return (
+    <div className={`signin ${leaving ? "leaving" : ""}`} role="dialog" aria-label="Sign in">
+      <div className="signin-card glass">
+        <p className="eyebrow">NimbusPay</p>
+        <h2>Sign in to Adoption Insights</h2>
+        <p className="muted">Your company account would set the role. This demo does not send the email anywhere.</p>
+        <label className="field">Work email
+          <input ref={email} type="email" autoComplete="username" placeholder="you@company.com" aria-label="Work email" />
+        </label>
+        <div className="signin-idps">
+          <button type="button" className="ghost" onClick={onEnter}>Microsoft Entra</button>
+          <button type="button" className="ghost" onClick={onEnter}>Google Workspace</button>
+          <button type="button" className="ghost" onClick={onEnter}>Okta</button>
+        </div>
+        <p className="eyebrow">Roles this workspace recognises</p>
+        <ul className="signin-roles">
+          {WORKSPACE_ROLES.map(([name, scope]) => (
+            <li key={name}><b>{name}</b><span>{scope}</span></li>
+          ))}
+        </ul>
+        <button type="button" className="btn signin-skip" onClick={onEnter}>Continue without signing in</button>
+      </div>
+    </div>
+  );
+}
+
 export function Toasts({ items }: { items: { id: number; text: string }[] }) {
   if (!items.length) return null;
   return (
@@ -116,8 +157,10 @@ export function CopilotBar({ open, chat, onAsk, onOpenThread, onOpen, onToggle }
       {present ? (
         <div className={`copilot-sheet glass ${leaving ? "leaving" : ""}`} role="dialog" aria-label="Agent">
           <header>
-            <b>Agent</b>
-            <span className="muted">Same thread as the Agent screen</span>
+            <div>
+              <b>Adoption Insights</b>
+              <span className="muted">Same thread as the Agent screen. Numbers come from SQL.</span>
+            </div>
             <button type="button" className="ghost" onClick={onOpenThread}>Open thread</button>
             <button type="button" className="icon-btn" aria-label="Collapse agent" onClick={onToggle}>
               <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M4 6.5 8 10.5 12 6.5" /></svg>

@@ -6,7 +6,7 @@ import * as C from "./api/client";
 import type { J } from "./lib/api";
 import { AppCtx, GROUPS, TABS, type ChatMsg, type Ctx, type Tab } from "./lib/store";
 import { LineageModal, WhyModal } from "./components/Explain";
-import { CommandBar, CopilotBar, ShortcutSheet, Toasts } from "./components/chrome";
+import { CommandBar, CopilotBar, ShortcutSheet, SignIn, Toasts } from "./components/chrome";
 import { cap } from "./lib/format";
 import { Skeleton } from "./components/ui";
 import Data from "./pages/Data";
@@ -48,6 +48,14 @@ export default function App() {
   });
   const [cmd, setCmd] = useState(false);
   const [panel, setPanel] = useState(false);
+  const [gate, setGate] = useState(() => {
+    if (typeof navigator !== "undefined" && navigator.webdriver) return false;
+    try { return sessionStorage.getItem("np-gate") !== "1"; } catch { return true; }
+  });
+  const enter = useCallback(() => {
+    try { sessionStorage.setItem("np-gate", "1"); } catch { /* private mode */ }
+    setGate(false);
+  }, []);
   const [help, setHelp] = useState(false);
   const [toasts, setToasts] = useState<{ id: number; text: string }[]>([]);
 
@@ -186,7 +194,6 @@ export default function App() {
       <div className="min-h-screen flex flex-col">
         <header className="topbar">
           <div className="brand-lock">
-            <span className="brand-badge" aria-hidden="true">N</span>
             <div>
               <div className="brand-name">NimbusPay</div>
               <div className="brand-product">Adoption Insights</div>
@@ -203,9 +210,6 @@ export default function App() {
             </button>
             <button type="button" className="icon-btn" aria-label="Open command bar" title="Command (⌘K)" onClick={() => setCmd(true)}>
               <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="7" cy="7" r="4.2" /><path d="M10.2 10.2 13.5 13.5" /></svg>
-            </button>
-            <button type="button" className="icon-btn" aria-label="Open agent" aria-pressed={panel || tab === "agent"} title="Agent (⌘J)" onClick={() => { if (tab === "agent") return; setPanel((v) => !v); }}>
-              <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 3.5h7.5a2 2 0 0 1 2 2V12L10 9.5H3a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z" /></svg>
             </button>
           </div>
         </header>
@@ -226,9 +230,9 @@ export default function App() {
             </div>
             <span className="vdiv" aria-hidden="true" />
             <div className="preset-scroll" role="group" aria-label="Scenario presets">
-              {SCEN.map((s: J, n: number) => (
+              {SCEN.map((s: J) => (
                 <button key={s.key} type="button" data-preset={s.key} aria-pressed={ST?.dataset === s.key} title={s.label} onClick={() => loadScenario(s.key)}>
-                  {n + 1} {SHORT[s.key] || s.label}
+                  {SHORT[s.key] || s.label}
                 </button>
               ))}
             </div>
@@ -264,11 +268,12 @@ export default function App() {
             ) : <Skeleton rows={6} />}
           </main>
         </div>
-        <footer className="muted px-6 py-5 text-[12px] text-center border-t border-line">Read-only. Every number is synthetic and labelled; thresholds and weights are placeholders to agree. Metric version <span id="ver">v1.0</span>. Built by Gowtham S.</footer>
+        <footer className="app-foot">Read-only. Every number is synthetic and labelled; thresholds and weights are placeholders to agree. Metric version <span id="ver">v1.0</span>. Built by Gowtham S.</footer>
       </div>
       <CommandBar open={cmd} tabs={TABS} scen={SCEN} onTab={show} onPreset={loadScenario} onAsk={ask} onClose={() => setCmd(false)} />
       {tab !== "agent" ? <CopilotBar open={panel} chat={chatRef.current} onAsk={(q) => ask(q, undefined, true)} onOpenThread={() => { setPanel(false); show("agent"); }} onOpen={() => setPanel(true)} onToggle={() => setPanel((v) => !v)} /> : null}
       <ShortcutSheet open={help} onClose={() => setHelp(false)} />
+      <SignIn open={gate} onEnter={enter} />
       <Toasts items={toasts} />
       {lin ? <LineageModal L={lin} onClose={() => setLin(null)} /> : null}
       {whyM ? <WhyModal m={whyM.m} L={whyM.L} ST={ST} onClose={() => setWhyM(null)} /> : null}
