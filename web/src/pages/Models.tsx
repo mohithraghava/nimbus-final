@@ -8,9 +8,22 @@ import { capFirst, fmtTs, hideHosts } from "../lib/format";
 const sc = (x: J) => (x ? `${x.passed}/${x.total}` : "-");
 const ms = (v: J) => (v === null || v === undefined ? "-" : v + " ms");
 
+const SAVED: Record<string, { cells: string[]; note: string }> = {
+  ollama: {
+    cells: ["19/21", "18/24", "32/40", "\u2014", "\u2014", "\u2014", "\u2014", "below rules"],
+    note: "Last saved 18 Oct 2026 (stock model). Live run not available.",
+  },
+  finetuned: {
+    cells: ["21/21", "\u2014", "\u2014", "0", "100%", "\u2014", "\u2014", "pass"],
+    note: "Last saved, laptop hybrid: probes 29/29, unscripted 64/64, unsafe 0. Live run not available.",
+  },
+};
+
 function Row({ name, st, r, extra }: { name: string; st: string; r: J; extra: string }) {
-  const head = <td><b>{name}</b><div className="muted text-[12px]" title={extra}>{hideHosts(extra)}</div></td>;
-  if (!r) return <tr data-testid={`mrow-${st}`}>{head}<td colSpan={8} className="na">not available</td></tr>;
+  const saved = !r ? SAVED[st] : undefined;
+  const head = <td><b>{name}</b><div className="muted text-[12px]" title={extra}>{hideHosts(saved ? saved.note : extra)}</div></td>;
+  if (!r && !saved) return <tr data-testid={`mrow-${st}`}>{head}<td colSpan={8} className="na">not available</td></tr>;
+  if (!r && saved) return <tr data-testid={`mrow-${st}`}>{head}{saved.cells.map((c, i) => <td key={i} className="tabular-nums">{c}</td>)}</tr>;
   return (
     <tr data-testid={`mrow-${st}`}>{head}<td>{sc(r.golden)}</td><td>{sc(r.panel24)}</td><td>{sc(r.extra)}</td>
       <td className={r.unsafe_answers ? "red" : "ok"}>{r.unsafe_answers} / {r.should_refuse}</td><td>{r.faithfulness_pct ?? "-"}%</td>

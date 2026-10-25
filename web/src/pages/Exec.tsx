@@ -8,10 +8,8 @@ const EV: Record<string, string> = { e1: "Utilisation", e2: "Verified impact", e
 const STAGES: [string, string][] = [["LF1", "Purchased"], ["LF2", "Assigned"], ["LF3", "Provisioned"], ["LF4", "Active"], ["LF5", "Engaged"], ["LF6", "Habitual"]];
 
 export default function Exec() {
-  const { ST } = useApp(); const M = ST.metrics, s = ST.score, rn = ST.renewal, f = ST.funnel;
+  const { ST, explain } = useApp(); const M = ST.metrics, s = ST.score, rn = ST.renewal, f = ST.funnel;
   const [more, setMore] = useState(false);
-  const [openMetric, setOpenMetric] = useState("");
-  const [openRow, setOpenRow] = useState("");
   const mau = Number(ST.users.vendor_mau_proxy) || 0;
   const habitual = Number(f.LF6) || 0;
   const paid = Number(f.LF1) || 0;
@@ -52,7 +50,7 @@ export default function Exec() {
           {STAGES.map(([id, name]) => (
             <div key={id} className="funnel-step">
               <strong>{f[id]}</strong>
-              <div className="col" style={{ height: Math.max(18, Math.round(92 * Number(f[id]) / peak)) }} />
+              <div className="col" style={{ height: Math.max(18, Math.round(92 * Number(f[id]) / peak)), ["--w" as string]: `${Math.round((100 * Number(f[id])) / peak)}%` }} />
               <em>{id} {name}</em>
             </div>
           ))}
@@ -69,7 +67,7 @@ export default function Exec() {
         </div>
         <div className="flex flex-col gap-4">
           {Object.entries(s.pillars).map(([k, v]: [string, J]) => (
-            <div key={k} className="grid grid-cols-[140px_1fr_48px] gap-3 items-center">
+            <div key={k} className="pillar">
               <span className="text-[14px]">{k} <span className="text-muted">w {s.weights[k]}</span></span>
               <div className="bar"><i className="navy" style={{ width: `${v ?? 0}%` }} /></div>
               <span className="text-right font-semibold tabular-nums">{v ?? "no data"}</span>
@@ -78,18 +76,11 @@ export default function Exec() {
         </div>
       </div>
       <h2 id="exec-metrics">Headline governed metrics</h2>
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 items-start">
+      <div className="metric-grid">
         {["M01", "M02", "M04", "M07", "M10", "M17", "M18"].map((id) => (
           <div key={id} className="metric-card">
-            <Kpi id={id} label={M[id].label + (M[id].approximate ? " (approx.)" : "")} val={fmt(M[id].value, M[id].unit)} sub={openMetric === id ? "" : M[id].note} />
-            <button type="button" className="text-btn" aria-expanded={openMetric === id} onClick={() => setOpenMetric(openMetric === id ? "" : id)}>{openMetric === id ? "Show less" : "View more"}</button>
-            {openMetric === id ? (
-              <div className="metric-more">
-                <div className="metric-more-val">{fmt(M[id].value, M[id].unit)}</div>
-                <p>{M[id].note}</p>
-                <span>{id}</span>
-              </div>
-            ) : null}
+            <Kpi id={id} label={M[id].label + (M[id].approximate ? " (approx.)" : "")} val={fmt(M[id].value, M[id].unit)} sub={M[id].note} />
+            <button type="button" className="text-btn" onClick={() => explain(id)}>View more</button>
           </div>
         ))}
       </div>
@@ -103,20 +94,13 @@ export default function Exec() {
                 <td className="whitespace-nowrap"><b>{id}</b></td>
                 <td>{M[id].label}</td>
                 <td className="!text-right tabular-nums font-semibold">{fmt(M[id].value, M[id].unit)}</td>
-                <td className="!text-right"><button type="button" className="text-btn" aria-expanded={openRow === id} onClick={(e) => { e.stopPropagation(); setOpenRow(openRow === id ? "" : id); }}>{openRow === id ? "Show less" : "View more"}</button></td>
+                <td className="!text-right"><button type="button" className="text-btn" onClick={(e) => { e.stopPropagation(); explain(id); }}>View more</button></td>
               </tr>,
-              openRow === id ? (
-                <tr key={id + "-more"}>
-                  <td colSpan={4}>
-                    <div className="metric-more"><p>{M[id].note || "No further note."}</p></div>
-                  </td>
-                </tr>
-              ) : null,
             ])}
           </tbody>
         </table>
       </div>
-      {ids.length > 8 ? <button type="button" className="ghost mt-3" onClick={() => setMore((v) => !v)}>{more ? "Show fewer" : "View more"}</button> : null}
+      {ids.length > 8 ? <button type="button" className="ghost mt-3" onClick={() => setMore((v) => !v)}>{more ? "Show fewer" : "Show all"}</button> : null}
     </>
   );
 }

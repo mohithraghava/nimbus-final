@@ -70,11 +70,12 @@ export function Skeleton({ rows = 4 }: { rows?: number }) {
   );
 }
 
-export function Modal({ id, onClose, children, width = 740, testid }: { id: string; onClose: () => void; children: ReactNode; width?: number; testid: string }) {
+export function Modal({ id, onClose, children, width = 740, testid, placement = "center" }: { id: string; onClose: () => void; children: ReactNode; width?: number; testid: string; placement?: "center" | "sheet" }) {
+  const sheet = placement === "sheet";
   return (
     <div id={id}>
-      <div className="modal" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-        <div className="tile why overflow-auto" style={{ maxWidth: width, width: "94%", maxHeight: "86vh", boxShadow: "var(--np-shadow-pop)" }} data-testid={testid}>
+      <div className={`modal${sheet ? " sheet" : ""}`} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className={`tile why overflow-auto${sheet ? " sheet-card" : ""}`} style={sheet ? undefined : { maxWidth: width, width: "94%", maxHeight: "86vh", boxShadow: "var(--np-shadow-pop)" }} data-testid={testid}>
           {children}
         </div>
       </div>

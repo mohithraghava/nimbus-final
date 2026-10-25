@@ -93,7 +93,9 @@ export default function App() {
   const tabRef = useRef<Tab>("data"), personaRef = useRef(""), stRef = useRef<J>(null);
   const [lin, setLin] = useState<J>(null);
   const [whyM, setWhyM] = useState<{ m: ChatMsg; L: (J | null)[] } | null>(null);
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("np-side") === "1");
+  const [drawer, setDrawer] = useState(false);
+  const [railLock, setRailLock] = useState(false);
+  const leftRail = useRef(true);
   const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
     const t = localStorage.getItem("np-theme");
     return t === "light" || t === "dark" ? t : "system";
@@ -115,7 +117,7 @@ export default function App() {
 
   const redraw = useCallback(() => setV((v) => v + 1), []);
   const navRef = useRef(nav); navRef.current = nav;
-  const show = useCallback((t: Tab) => { tabRef.current = t; navRef.current("/" + t); }, []);
+  const show = useCallback((t: Tab) => { tabRef.current = t; navRef.current("/" + t); setDrawer(false); }, []);
   const setPersona = useCallback((p: string) => { personaRef.current = p; setPersonaRaw(p); }, []);
   const setSTx = useCallback((s: J) => { stRef.current = s; setST(s); }, []);
   const toast = useCallback((text: string) => {
@@ -244,7 +246,7 @@ export default function App() {
       const meta = e.metaKey || e.ctrlKey;
       if (meta && e.key.toLowerCase() === "k") { e.preventDefault(); setCmd(true); return; }
       if (meta && e.key.toLowerCase() === "j") { e.preventDefault(); setPanel((v) => !v); return; }
-      if (e.key === "Escape") { setCmd(false); setPanel(false); setHelp(false); setAcct(false); setProfile(false); return; }
+      if (e.key === "Escape") { setCmd(false); setPanel(false); setHelp(false); setAcct(false); setProfile(false); setDrawer(false); return; }
       if (typing) return;
       if (e.key === "?") { e.preventDefault(); setHelp(true); return; }
       if (e.key.toLowerCase() === "t" && !meta) { e.preventDefault(); toggleTheme(); return; }
@@ -263,81 +265,99 @@ export default function App() {
     chat: chatRef.current, redraw, clearChat: () => { chatRef.current.length = 0; }, ask, explain, why, loadScenario, toast,
   }), [ST, setSTx, SCEN, tab, show, persona, personaLabel, personas, setPersona, redraw, ask, explain, why, loadScenario, toast]);
 
+  useEffect(() => { if (QA) document.documentElement.dataset.qa = "1"; }, []);
+
   const darkOn = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const themeIcon = () => darkOn ? (
+    <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="8" cy="8" r="3" /><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" /></svg>
+  ) : (
+    <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M13.5 10.2A5.5 5.5 0 0 1 5.8 2.5 5.5 5.5 0 1 0 13.5 10.2z" /></svg>
+  );
+  const account = (place: "rail" | "bar") => (
+    <div className={`cluster cluster-${place}`}>
+      <span className="pill rail-pill">Synthetic</span>
+      <button type="button" className="icon-btn" aria-label={darkOn ? "Switch to light theme" : "Switch to dark theme"} title="Theme (T)" onClick={toggleTheme}>{themeIcon()}</button>
+      <button type="button" className="icon-btn" aria-label="Open command bar" title="Command (⌘K)" onClick={() => setCmd(true)}>
+        <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="7" cy="7" r="4.2" /><path d="M10.2 10.2 13.5 13.5" /></svg>
+      </button>
+      <div className="acct">
+        <button type="button" className="acct-btn" aria-label="Account" aria-expanded={acct} onClick={() => { setRailLock(false); setAcct((v) => !v); }}>
+          <span className="acct-mark" aria-hidden="true">{(personaLabel || "E").slice(0, 1)}</span>
+          <span className="acct-name">{personaLabel || "Account"}</span>
+        </button>
+        {acct ? (
+          <div className="acct-menu glass" role="menu">
+            <div className="acct-who">
+              <b>{personaLabel || "Executive"}</b>
+              <span>demo@nimbuspay.example</span>
+            </div>
+            <button type="button" role="menuitem" onClick={() => { setAcct(false); setProfile(true); }}>Profile</button>
+            <button type="button" role="menuitem" onClick={() => { setAcct(false); setHelp(true); }}>Keyboard shortcuts</button>
+            <button type="button" role="menuitem" onClick={() => { setAcct(false); toggleTheme(); }}>{darkOn ? "Light theme" : "Dark theme"}</button>
+            <button type="button" role="menuitem" className="danger" onClick={signOut}>Sign out</button>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
 
   return (
     <AppCtx.Provider value={ctx}>
       <div className="app-frame min-h-screen">
-        <aside className={`shell-side ${collapsed ? "collapsed" : ""}`}>
-          <div className="side-head">
-            <div className="side-brand">
-              <b>NimbusPay</b>
-              <span>Adoption Insights</span>
-            </div>
-            <button type="button" className="icon-btn side-toggle" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} onClick={() => { const n = !collapsed; setCollapsed(n); localStorage.setItem("np-side", n ? "1" : "0"); }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 4h10M3 8h10M3 12h10" /></svg>
-            </button>
-          </div>
-          <div className="side-scroll">
-          <div className="side-datasets" role="group" aria-label="Scenario presets">
-            <div className="nav-group">Presets</div>
-            {SCEN.map((s: J) => (
-              <button key={s.key} type="button" className="nav-item" data-preset={s.key} aria-pressed={ST?.dataset === s.key} title={s.label} onClick={() => loadScenario(s.key)}>
-                <DatasetIcon id={s.key} />
-                <span className="nav-label">{SHORT[s.key] || s.label}</span>
+        {drawer ? <button type="button" className="drawer-scrim" aria-label="Close menu" onClick={() => setDrawer(false)} /> : null}
+        <aside
+          className={`shell-side ${drawer ? "drawer-open" : ""} ${railLock && !acct ? "rail-locked" : ""}`}
+          onMouseEnter={() => { if (leftRail.current) { leftRail.current = false; setRailLock(false); } }}
+          onMouseLeave={() => { leftRail.current = true; }}
+        >
+          <div className="rail-surface">
+            <div className="side-head">
+              <div className="side-brand">
+                <span className="brand-badge" aria-hidden="true">N</span>
+                <span className="brand-copy">
+                  <b>NimbusPay</b>
+                  <span>Adoption Insights</span>
+                </span>
+              </div>
+              <button type="button" className="icon-btn drawer-close" aria-label="Close menu" onClick={() => setDrawer(false)}>
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M4 4l8 8M12 4l-8 8" /></svg>
               </button>
-            ))}
-            <p id="ds" className="side-ds">{ST ? <>{ST.dataset_label} · {ST.data_as_of}</> : ""}</p>
-          </div>
-          <nav id="tabs" aria-label="Screens">
-            {GROUPS.map(([g, ts]) => (
-              <div key={g} className="side-group">
-                <div className="nav-group">{g}</div>
-                {ts.map((k) => (
-                  <button key={k} data-tab={k} id={`tab-${k}`} onClick={() => show(k)} aria-current={tab === k ? "page" : undefined} className={`nav-item ${tab === k ? "on" : ""}`} title={LABEL[k]}>
-                    <NavIcon id={k} />
-                    <span className="nav-label">{LABEL[k]}</span>
+            </div>
+            <div className="side-scroll">
+              <div className="side-datasets" role="group" aria-label="Scenario presets">
+                <div className="nav-group">Presets</div>
+                {SCEN.map((s: J) => (
+                  <button key={s.key} type="button" className="nav-item" data-preset={s.key} aria-pressed={ST?.dataset === s.key} aria-label={s.label} onClick={(e) => { e.currentTarget.blur(); setRailLock(true); setAcct(false); loadScenario(s.key); }}>
+                    <DatasetIcon id={s.key} />
+                    <span className="nav-label">{SHORT[s.key] || s.label}</span>
                   </button>
                 ))}
+                <p id="ds" className="side-ds">{ST ? <>{ST.dataset_label} · {ST.data_as_of}</> : ""}</p>
               </div>
-            ))}
-          </nav>
+              <nav id="tabs" aria-label="Screens">
+                {GROUPS.map(([g, ts]) => (
+                  <div key={g} className="side-group">
+                    <div className="nav-group">{g}</div>
+                    {ts.map((k) => (
+                      <button key={k} data-tab={k} id={`tab-${k}`} onClick={(e) => { e.currentTarget.blur(); setRailLock(true); setAcct(false); show(k); }} aria-current={tab === k ? "page" : undefined} className={`nav-item ${tab === k ? "on" : ""}`} aria-label={LABEL[k]}>
+                        <NavIcon id={k} />
+                        <span className="nav-label">{LABEL[k]}</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </nav>
+            </div>
+            {account("rail")}
           </div>
         </aside>
         <div className="app-main">
           <header className="topbar">
-            <div className="top-actions">
-              <span className="pill">Synthetic</span>
-              <button type="button" className="icon-btn" aria-label={darkOn ? "Switch to light theme" : "Switch to dark theme"} title="Theme (T)" onClick={toggleTheme}>
-                {darkOn ? (
-                  <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="8" cy="8" r="3" /><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" /></svg>
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M13.5 10.2A5.5 5.5 0 0 1 5.8 2.5 5.5 5.5 0 1 0 13.5 10.2z" /></svg>
-                )}
-              </button>
-              <button type="button" className="icon-btn" aria-label="Open command bar" title="Command (⌘K)" onClick={() => setCmd(true)}>
-                <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="7" cy="7" r="4.2" /><path d="M10.2 10.2 13.5 13.5" /></svg>
-              </button>
-              <div className="acct">
-                <button type="button" className="acct-btn" aria-label="Account" aria-expanded={acct} onClick={() => setAcct((v) => !v)}>
-                  <span className="acct-mark" aria-hidden="true">{(personaLabel || "E").slice(0, 1)}</span>
-                  <span className="acct-name">{personaLabel || "Account"}</span>
-                </button>
-                {acct ? (
-                  <div className="acct-menu glass" role="menu">
-                    <div className="acct-who">
-                      <b>{personaLabel || "Executive"}</b>
-                      <span>demo@nimbuspay.example</span>
-                    </div>
-                    {QA ? null : <RoleSwitch persona={persona} personas={personas} onPick={(r) => { if (r === persona) return; setPersona(r); toast(personas?.[r] || cap(r)); setAcct(false); }} />}
-                    <button type="button" role="menuitem" onClick={() => { setAcct(false); setProfile(true); }}>Profile</button>
-                    <button type="button" role="menuitem" onClick={() => { setAcct(false); setHelp(true); }}>Keyboard shortcuts</button>
-                    <button type="button" role="menuitem" onClick={() => { setAcct(false); toggleTheme(); }}>{darkOn ? "Light theme" : "Dark theme"}</button>
-                    <button type="button" role="menuitem" className="danger" onClick={signOut}>Sign out</button>
-                  </div>
-                ) : null}
-              </div>
-            </div>
+            <button type="button" className="icon-btn menu-btn" aria-label={drawer ? "Close menu" : "Open menu"} aria-expanded={drawer} onClick={() => setDrawer((v) => !v)}>
+              <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 4h10M3 8h10M3 12h10" /></svg>
+            </button>
+            <div className="top-brand"><b>NimbusPay</b></div>
+            {account("bar")}
           </header>
           <main id="view">
             {ST && personas ? (

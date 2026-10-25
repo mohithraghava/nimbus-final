@@ -8,5 +8,6 @@ app/var/
 dist/
 finetune/eval_report.json
 finetune/.public_cache/
+finetune/models/*.gguf
 modal_run_*.json
 .venv-parity/

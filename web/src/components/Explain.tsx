@@ -6,8 +6,11 @@ import { Modal } from "./ui";
 
 export function LineageModal({ L, onClose }: { L: J; onClose: () => void }) {
   return (
-    <Modal id="lin" onClose={onClose} width={740} testid="lineage">
-      <h2 className="!mt-0 !text-[18px]">Explain this number: {L.metric} {symbols(L.name)} = {L.value ?? "withheld"}{L.unit === "%" ? "%" : ""}</h2>
+    <Modal id="lin" onClose={onClose} width={740} testid="lineage" placement="sheet">
+      <div className="sheet-head">
+        <h2 className="!mt-0 !text-[18px]">Explain this number: {L.metric} {symbols(L.name)} = {L.value ?? "withheld"}{L.unit === "%" ? "%" : ""}</h2>
+        <button className="ghost" data-testid="lin-close" onClick={onClose}>Close</button>
+      </div>
       <table>
         <tbody>
           <tr><th>Version</th><td>{L.version}{L.approximate ? " (approximate)" : ""}</td></tr>
@@ -24,7 +27,6 @@ export function LineageModal({ L, onClose }: { L: J; onClose: () => void }) {
       {L.sql ? (
         <><h2>SQL</h2><pre>{L.sql}</pre><div className="muted mt-2">Re-run now on the warehouse: <b className="text-ink">{JSON.stringify(L.sql_result)}</b></div></>
       ) : <p className="muted mt-3">No SQL: this metric comes from an agreed input or from other metrics (see sources).</p>}
-      <p className="mt-5"><button className="ghost" data-testid="lin-close" onClick={onClose}>Close</button></p>
     </Modal>
   );
 }

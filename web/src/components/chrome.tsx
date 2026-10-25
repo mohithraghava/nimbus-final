@@ -18,17 +18,6 @@ function usePresence(open: boolean) {
   return { present, leaving };
 }
 
-const WORKSPACE_ROLES: [string, string][] = [
-  ["Executive", "All regions. The renewal decision."],
-  ["Finance and Procurement", "Cost, seats, and the contract."],
-  ["Manager", "All regions. Team adoption."],
-  ["Analyst", "Region A only."],
-  ["Regional lead", "Region A only."],
-  ["Fraud operations lead", "Region A only."],
-  ["Platform engineer", "Reliability and connectors."],
-  ["Unrecognised", "Least privilege. No numbers."],
-];
-
 export function SignIn({ open, onRole }: { open: boolean; onRole: (role: string) => void }) {
   const { present, leaving } = usePresence(open);
   const email = useRef<HTMLInputElement>(null);
@@ -37,42 +26,33 @@ export function SignIn({ open, onRole }: { open: boolean; onRole: (role: string)
   const enter = (e?: { preventDefault: () => void }) => { e?.preventDefault(); onRole(role); };
   return (
     <div className={`signin ${leaving ? "leaving" : ""}`} role="dialog" aria-label="Sign in">
-      <div className="signin-card glass">
-        <div className="signin-copy">
-          <p className="eyebrow">NimbusPay</p>
-          <h2>Sign in to Adoption Insights</h2>
-          <p className="muted">Your company account sets the role. This screen sends nothing, and you can skip it.</p>
-          <p className="eyebrow">Who can sign in</p>
-          <ul className="signin-roles">
-            {WORKSPACE_ROLES.map(([name, scope]) => (
-              <li key={name}><b>{name}</b><span>{scope}</span></li>
-            ))}
-          </ul>
-        </div>
-        <form className="signin-form" onSubmit={enter}>
-          <label className="field">Work email
-            <input ref={email} type="email" autoComplete="username" placeholder="you@company.com" aria-label="Work email" />
-          </label>
-          <label className="field">Role
-            <select aria-label="Role" value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="executive">Executive</option>
-              <option value="finance">Finance and Procurement</option>
-              <option value="manager">Manager</option>
-              <option value="analyst">Analyst</option>
-              <option value="regional_lead">Regional lead</option>
-              <option value="fraud_ops_lead">Fraud operations lead</option>
-              <option value="platform_engineer">Platform engineer</option>
-              <option value="guest">Unrecognised</option>
-            </select>
-          </label>
-          <button className="btn" type="submit">Continue</button>
-          <p className="signin-or">or your identity provider</p>
-          <button type="button" className="idp" onClick={() => onRole(role)}>Microsoft Entra</button>
-          <button type="button" className="idp" onClick={() => onRole(role)}>Google Workspace</button>
+      <form className="signin-card glass" onSubmit={enter}>
+        <p className="eyebrow">NimbusPay</p>
+        <h2>Sign in</h2>
+        <p className="muted">Your company account sets the role. This screen sends nothing.</p>
+        <label className="field">Work email
+          <input ref={email} type="email" autoComplete="username" placeholder="you@company.com" aria-label="Work email" />
+        </label>
+        <label className="field">Role
+          <select aria-label="Role" value={role} onChange={(e) => setRole(e.target.value)}>
+            <option value="executive">Executive</option>
+            <option value="finance">Finance and Procurement</option>
+            <option value="manager">Manager</option>
+            <option value="analyst">Analyst</option>
+            <option value="regional_lead">Regional lead</option>
+            <option value="fraud_ops_lead">Fraud operations lead</option>
+            <option value="platform_engineer">Platform engineer</option>
+            <option value="guest">Unrecognised</option>
+          </select>
+        </label>
+        <button className="btn" type="submit">Continue</button>
+        <div className="sso-row">
+          <button type="button" className="idp" onClick={() => onRole(role)}>Microsoft</button>
+          <button type="button" className="idp" onClick={() => onRole(role)}>Google</button>
           <button type="button" className="idp" onClick={() => onRole(role)}>Okta</button>
-          <button type="button" className="ghost signin-skip" onClick={() => onRole(role)}>Continue without signing in</button>
-        </form>
-      </div>
+        </div>
+        <button type="button" className="ghost signin-skip" onClick={() => onRole(role)}>Continue without signing in</button>
+      </form>
     </div>
   );
 }
