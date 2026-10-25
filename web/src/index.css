@@ -329,7 +329,7 @@
     display: block; width: 16px; height: 16px; flex: none; color: currentColor;
   }
   .shell-side.collapsed { width: 76px; }
-  .nav-group { font-size: 12px; font-weight: 600; color: var(--np-muted); margin: 0 0 4px; }
+  .nav-group { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--np-muted); margin: 0 0 4px; padding-left: 38px; }
   .shell-side.collapsed .nav-label, .shell-side.collapsed .nav-group { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .shell-side.collapsed .nav-glyph { display: grid; }
   .shell-side.collapsed button.nav-item { justify-content: center; padding: 6px; }

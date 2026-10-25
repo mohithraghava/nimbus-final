@@ -303,7 +303,7 @@ export default function App() {
             <nav id="tabs" aria-label="Screens">
               {GROUPS.map(([g, ts]) => (
                 <div key={g} className="flex lg:flex-col gap-0.5">
-                  <div className="nav-group px-3">{g}</div>
+                  <div className="nav-group">{g}</div>
                   {ts.map((k) => (
                     <button key={k} data-tab={k} id={`tab-${k}`} onClick={() => show(k)} aria-current={tab === k ? "page" : undefined} className={`nav-item ${tab === k ? "on" : ""}`} title={LABEL[k]}>
                       <NavIcon id={k} />
