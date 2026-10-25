@@ -627,7 +627,7 @@ html.dark .icon-btn { color: #F7F7F5; }
 }
 .side-roles, .side-datasets { display: flex; flex-direction: column; gap: 2px; margin-bottom: 16px; }
 .side-persona { width: 100%; margin-top: 6px; font-size: 13px; }
-.side-ds { margin: 8px 12px 0; font-size: 11px; color: var(--np-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.side-ds { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .side-datasets .nav-item[aria-pressed="true"] {
   background: var(--np-accent-soft);
   color: var(--np-ink);

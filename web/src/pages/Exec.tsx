@@ -62,7 +62,7 @@ export default function Exec() {
       <h2 id="exec-score">AI value score (M19), shown beside its pillars, never a team target</h2>
       <div className="grid gap-8 lg:grid-cols-[240px_1fr] items-start">
         <div>
-          <div className="text-[13px] text-muted">M19 {M.M19.version}</div>
+          <div className="text-[13px] text-muted">M19</div>
           <div className="text-[56px] font-semibold leading-none tracking-[-0.04em] mt-2">{sc}</div>
           <p className="mt-3 text-[14px] text-muted">{s.reason}</p>
           {s.interim_index !== null ? <p className="mt-3 text-[14px]">Interim adoption and health index: <b>{s.interim_index}/100</b> (33/25/25/17)</p> : null}
