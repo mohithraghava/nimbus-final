@@ -634,7 +634,7 @@ html.dark .icon-btn { color: #F7F7F5; }
 }
 .side-roles, .side-datasets { display: flex; flex-direction: column; gap: 2px; margin-bottom: 16px; }
 .side-persona { width: 100%; margin-top: 6px; font-size: 13px; }
-.side-ds { margin: 8px 12px 0; font-size: 11px; color: var(--np-muted); }
+.side-ds { margin: 8px 12px 0; font-size: 11px; color: var(--np-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .side-datasets .nav-item[aria-pressed="true"] {
   background: var(--np-accent-soft);
   color: var(--np-ink);
@@ -648,13 +648,21 @@ html.dark .side-datasets .nav-item[aria-pressed="true"] { background: rgba(232, 
 }
 .acct-menu .role-switch { padding: 4px 8px 8px; }
 .acct-menu .role { border-radius: 999px; padding: 6px 10px; font-size: 13px; }
-.metric-card { display: flex; flex-direction: column; min-width: 0; }
+.metric-card {
+  display: flex; flex-direction: column; min-width: 0;
+  background: color-mix(in srgb, var(--np-surface) 86%, transparent);
+  border: 1px solid var(--np-line); border-radius: 18px; box-shadow: var(--np-shadow);
+  padding: 4px 4px 14px; transition: transform 200ms var(--np-ease), box-shadow 200ms var(--np-ease);
+}
+.metric-card:hover { transform: translateY(-2px); box-shadow: var(--np-shadow-lift); }
+.metric-card .kpi { background: transparent; border: 0; box-shadow: none; padding: 12px 12px 0; }
+.metric-card .kpi:hover { transform: none; box-shadow: none; }
 .text-btn {
-  align-self: flex-start; margin-top: 8px; border: 0; background: transparent; color: var(--np-accent);
+  align-self: flex-start; margin: 6px 16px 0; border: 0; background: transparent; color: var(--np-accent);
   font-weight: 600; font-size: 13px; padding: 0; transition: transform 180ms var(--np-ease), color 180ms var(--np-ease);
 }
 .text-btn:hover { transform: translateX(2px); color: var(--np-accent-press); }
-.metric-more { margin-top: 8px; animation: frame-in 240ms cubic-bezier(0.22, 1, 0.36, 1); font-size: 13px; color: var(--np-muted); }
+.metric-more { margin: 8px 16px 0; animation: frame-in 240ms cubic-bezier(0.22, 1, 0.36, 1); font-size: 13px; color: var(--np-muted); }
 .metric-more-val { font-size: 28px; font-weight: 600; letter-spacing: -0.03em; color: var(--np-ink); }
 .metric-list { transition: max-height 240ms var(--np-ease); }
 .btn:active, .ghost:active, .idp:active, .text-btn:active, .nav-item:active { transform: scale(0.98); }
