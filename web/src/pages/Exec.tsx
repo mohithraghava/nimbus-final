@@ -52,7 +52,7 @@ export default function Exec() {
           {STAGES.map(([id, name]) => (
             <div key={id} className="funnel-step">
               <strong>{f[id]}</strong>
-              <div className="col" style={{ height: Math.max(20, Math.round(128 * Number(f[id]) / peak)) }} />
+              <div className="col" style={{ height: Math.max(18, Math.round(92 * Number(f[id]) / peak)) }} />
               <em>{id} {name}</em>
             </div>
           ))}

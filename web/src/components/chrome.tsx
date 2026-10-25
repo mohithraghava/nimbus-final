@@ -108,6 +108,19 @@ export function ShortcutSheet({ open, onClose }: { open: boolean; onClose: () =>
   );
 }
 
+const STEPS = ["Thinking", "Checking the rules", "Gathering the figures"];
+
+export function Thought({ step }: { step: number }) {
+  return (
+    <ol className="thought" aria-label="Working">
+      {STEPS.map((label, i) => {
+        const st = step > i ? "done" : step === i ? "on" : "wait";
+        return <li key={label} className={st} aria-current={st === "on" ? "step" : undefined}>{label}</li>;
+      })}
+    </ol>
+  );
+}
+
 export function CommandBar({ open, tabs, scen, onTab, onPreset, onAsk, onClose }: {
   open: boolean;
   tabs: [Tab, string][];
@@ -189,7 +202,7 @@ export function CopilotBar({ open, chat, onAsk, onOpenThread, onOpen, onToggle }
             {chat.length ? chat.map((m, i) => m.me !== undefined
               ? <div key={i} className="msg me">{m.me}</div>
               : <div key={i} className={`msg bot ${m.bot?.type || ""}`}>
-                  {m.streaming ? <ol className="thought" aria-label="Working"><li className="on">Thinking</li><li className={m.bot?.text ? "on" : ""}>Checking the rules</li><li className={m.bot?.text ? "on" : ""}>Gathering the figures</li></ol> : null}
+                  {typeof m.thought === "number" ? <Thought step={m.streaming ? m.thought : 3} /> : null}
                   {m.streaming ? <span className="cursor">{m.bot?.text || <span className="dots"><i /><i /><i /></span>}</span> : m.bot?.text}
                   {!m.streaming && m.bot?.text ? <button type="button" className="ghost speak" aria-label="Read this answer aloud" onClick={() => toggleSpeech(m.bot?.text || "")}>Listen</button> : null}
                   {m.plan && m.plan.state === "pending" ? <button type="button" className="ghost" onClick={onOpenThread}>Review task</button> : null}

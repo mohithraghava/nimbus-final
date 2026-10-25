@@ -10,7 +10,7 @@ export const TABS: [Tab, string][] = [["data", "Data"], ["exec", "Executive"], [
 /* Sidebar grouping is presentation only; order and labels are the legacy TABS. */
 export const GROUPS: [string, Tab[]][] = [["Dataset", ["data"]], ["Insights", ["exec", "whatif", "seats", "region", "eng"]], ["Agent", ["agent", "alerts"]], ["Reporting", ["compare", "pack", "audit"]], ["Platform", ["cost", "models"]]];
 
-export type ChatMsg = { me?: string; as?: string | null; bot?: J; streaming?: boolean; q?: string; persona?: string; fb?: string; fbErr?: string; plan?: TaskPlan };
+export type ChatMsg = { me?: string; as?: string | null; bot?: J; streaming?: boolean; thought?: number; q?: string; persona?: string; fb?: string; fbErr?: string; plan?: TaskPlan };
 
 export type Ctx = {
   ST: J; setST: (s: J) => void;

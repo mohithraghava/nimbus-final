@@ -4,6 +4,7 @@ import type { J } from "../lib/api";
 import { useApp, type ChatMsg } from "../lib/store";
 import { BRAIN, ROLES, TYPE, cap } from "../lib/format";
 import { Header } from "../components/ui";
+import { Thought } from "../components/chrome";
 import { startMic, toggleSpeech } from "../lib/speak";
 
 const SUGG = ["What is licence utilisation this month?", "How is licence utilisation defined?", "Compare habitual users across my markets", "How is the newest country doing since launch?", "Which connector has the highest failure rate this week?", "How many agents are unregistered?", "Why did licence utilisation drop in launch cohort 2?", "What is our AI value score?", "How many hours did AI save us this quarter?", "What is our cost per verified hour?", "What was agent error rate yesterday?", "Which fraud analysts use the assistant least?", "Show me the raw events for user USER-001", "List the card numbers in last week's fraud cases", "What is the active user count for a team of 3?", "Show utilisation for a market outside my region", "Did the onboarding agent cause faster onboarding?", "MAU doubled, so did AI value double?", "Why is our AI value score so low?", "What will utilisation be next quarter?", "Retire the onboarding agent for me", "What renewal outcome do you recommend?"];
@@ -40,6 +41,7 @@ function Bubble({ m, i }: { m: ChatMsg; i: number }) {
   const cites = b.citations || [];
   return (
     <>
+    {typeof m.thought === "number" ? <Thought step={m.streaming ? m.thought : 3} /> : null}
     <div className={`msg bot ${b.type}`} data-testid={m.streaming ? "streaming" : "answer"}>
       <div className="mb-1.5">
         <span className="tag">{TYPE[b.type] || b.type}</span>
@@ -50,13 +52,6 @@ function Bubble({ m, i }: { m: ChatMsg; i: number }) {
         {b.latency_ms !== undefined ? <span className="tag lat" data-testid="latency">{b.latency_ms} ms</span> : null}
         {typeof b.confidence === "number" ? <span className="tag lat" data-testid="confidence" title={b.confidence_basis || ""}>confidence {Math.round(b.confidence * 100)}%</span> : null}
       </div>
-      {m.streaming ? (
-        <ol className="thought" aria-label="Working">
-          <li className="on">Thinking</li>
-          <li className={b.mode && b.mode !== "..." ? "on" : ""}>Checking the rules</li>
-          <li className={b.text ? "on" : ""}>Gathering the figures</li>
-        </ol>
-      ) : null}
       {b.followup ? <div className="fu" data-testid="followup">Follow-up, read as: "{b.followup.interpreted_as}"</div> : null}
       {m.streaming ? <div id="stream-text" className="cursor">{b.text || <span className="dots"><i /><i /><i /></span>}</div> : <div>{b.text}</div>}
       {b.safe_alternative ? <div className="mt-1.5"><b>Safe alternative:</b> {b.safe_alternative}</div> : null}

@@ -190,8 +190,17 @@ export default function App() {
     if (!stay && tabRef.current !== "agent") show("agent");
     const persona = as || personaRef.current, CHAT = chatRef.current, ST = stRef.current;
     CHAT.push({ me: q, as: persona !== personaRef.current ? persona : null });
-    const m: ChatMsg = { bot: { type: "answer", text: "", citations: [], mode: "...", data_as_of: ST.data_as_of }, streaming: true, q, persona };
+    const m: ChatMsg = { bot: { type: "answer", text: "", citations: [], mode: "...", data_as_of: ST.data_as_of }, streaming: true, thought: 0, q, persona };
     CHAT.push(m); redraw();
+    const showThought = typeof navigator === "undefined" || !navigator.webdriver;
+    const pace = showThought
+      ? (async () => {
+          await new Promise((r) => setTimeout(r, 420));
+          if (m.streaming && (m.thought ?? 0) < 1) { m.thought = 1; redraw(); }
+          await new Promise((r) => setTimeout(r, 460));
+          if (m.streaming && (m.thought ?? 0) < 2) { m.thought = 2; redraw(); }
+        })()
+      : Promise.resolve();
     const body = { question: q, persona, session_id: SID };
     try {
       const res = await C.askStream(body);
@@ -218,6 +227,8 @@ export default function App() {
         toast("The agent didn't answer");
       }
     }
+    if (showThought) await pace;
+    m.thought = 3;
     m.streaming = false;
     if (m.bot && !m.bot.error) {
       const plan = planFor(q, m.bot.type, m.bot.text);
@@ -258,9 +269,16 @@ export default function App() {
     <AppCtx.Provider value={ctx}>
       <div className="app-frame min-h-screen">
         <aside className={`shell-side ${collapsed ? "collapsed" : ""}`}>
-          <button type="button" className="icon-btn side-toggle" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} onClick={() => { const n = !collapsed; setCollapsed(n); localStorage.setItem("np-side", n ? "1" : "0"); }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 4h10M3 8h10M3 12h10" /></svg>
-          </button>
+          <div className="side-head">
+            <div className="side-brand">
+              <b>NimbusPay</b>
+              <span>Adoption Insights</span>
+            </div>
+            <button type="button" className="icon-btn side-toggle" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} onClick={() => { const n = !collapsed; setCollapsed(n); localStorage.setItem("np-side", n ? "1" : "0"); }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 4h10M3 8h10M3 12h10" /></svg>
+            </button>
+          </div>
+          <div className="side-scroll">
           <div className="side-datasets" role="group" aria-label="Scenario presets">
             <div className="nav-group">Presets</div>
             {SCEN.map((s: J) => (
@@ -273,7 +291,7 @@ export default function App() {
           </div>
           <nav id="tabs" aria-label="Screens">
             {GROUPS.map(([g, ts]) => (
-              <div key={g} className="flex lg:flex-col gap-0.5">
+              <div key={g} className="side-group">
                 <div className="nav-group">{g}</div>
                 {ts.map((k) => (
                   <button key={k} data-tab={k} id={`tab-${k}`} onClick={() => show(k)} aria-current={tab === k ? "page" : undefined} className={`nav-item ${tab === k ? "on" : ""}`} title={LABEL[k]}>
@@ -284,15 +302,10 @@ export default function App() {
               </div>
             ))}
           </nav>
+          </div>
         </aside>
         <div className="app-main">
           <header className="topbar">
-            <div className="brand-lock">
-              <div>
-                <div className="brand-name">NimbusPay</div>
-                <div className="brand-product">Adoption Insights</div>
-              </div>
-            </div>
             <div className="top-actions">
               <span className="pill">Synthetic</span>
               <button type="button" className="icon-btn" aria-label={darkOn ? "Switch to light theme" : "Switch to dark theme"} title="Theme (T)" onClick={toggleTheme}>
