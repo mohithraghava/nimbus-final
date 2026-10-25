@@ -29,11 +29,12 @@ const WORKSPACE_ROLES: [string, string][] = [
   ["Unrecognised", "Least privilege. No numbers."],
 ];
 
-export function SignIn({ open, onEnter }: { open: boolean; onEnter: () => void }) {
+export function SignIn({ open, onRole }: { open: boolean; onRole: (role: string) => void }) {
   const { present, leaving } = usePresence(open);
   const email = useRef<HTMLInputElement>(null);
+  const [role, setRole] = useState("executive");
   if (!present) return null;
-  const enter = (e?: { preventDefault: () => void }) => { e?.preventDefault(); onEnter(); };
+  const enter = (e?: { preventDefault: () => void }) => { e?.preventDefault(); onRole(role); };
   return (
     <div className={`signin ${leaving ? "leaving" : ""}`} role="dialog" aria-label="Sign in">
       <div className="signin-card glass">
@@ -52,12 +53,24 @@ export function SignIn({ open, onEnter }: { open: boolean; onEnter: () => void }
           <label className="field">Work email
             <input ref={email} type="email" autoComplete="username" placeholder="you@company.com" aria-label="Work email" />
           </label>
+          <label className="field">Role
+            <select aria-label="Role" value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="executive">Executive</option>
+              <option value="finance">Finance and Procurement</option>
+              <option value="manager">Manager</option>
+              <option value="analyst">Analyst</option>
+              <option value="regional_lead">Regional lead</option>
+              <option value="fraud_ops_lead">Fraud operations lead</option>
+              <option value="platform_engineer">Platform engineer</option>
+              <option value="guest">Unrecognised</option>
+            </select>
+          </label>
           <button className="btn" type="submit">Continue</button>
           <p className="signin-or">or your identity provider</p>
-          <button type="button" className="idp" onClick={onEnter}>Microsoft Entra</button>
-          <button type="button" className="idp" onClick={onEnter}>Google Workspace</button>
-          <button type="button" className="idp" onClick={onEnter}>Okta</button>
-          <button type="button" className="ghost signin-skip" onClick={onEnter}>Continue without signing in</button>
+          <button type="button" className="idp" onClick={() => onRole(role)}>Microsoft Entra</button>
+          <button type="button" className="idp" onClick={() => onRole(role)}>Google Workspace</button>
+          <button type="button" className="idp" onClick={() => onRole(role)}>Okta</button>
+          <button type="button" className="ghost signin-skip" onClick={() => onRole(role)}>Continue without signing in</button>
         </form>
       </div>
     </div>

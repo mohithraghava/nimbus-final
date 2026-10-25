@@ -1,6 +1,6 @@
 /* NimbusPay Adoption Insights UI (v2). Talks to the same FastAPI backend as the legacy UI; all data synthetic.
    Behaviour is a 1:1 port of app/static/app.js: same tabs, controls, requests, numbers and data-testids. */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import * as C from "./api/client";
 import type { J } from "./lib/api";
@@ -10,45 +10,39 @@ import { CommandBar, CopilotBar, ShortcutSheet, SignIn, Toasts } from "./compone
 import { planFor } from "./lib/tasks";
 import { cap } from "./lib/format";
 
-function DatasetIcon({ id }: { id: string }) {
-  const d: Record<string, string> = {
-    baseline: "M3 12.5V8M8 12.5V4M13 12.5V6.5",
-    healthy: "M3.5 8.2 6.4 11 12.5 4.5",
-    overstated: "M8 3.2 13.2 12.5H2.8z",
-    shelfware: "M3 5.5h10v7H3z M3 8h10",
-    newcountry: "M8 2.8a5.2 5.2 0 1 0 .1 0z M3.2 8h9.6M8 2.8c1.6 1.6 1.6 8.8 0 10.4M8 2.8c-1.6 1.6-1.6 8.8 0 10.4",
-    incident: "M8 3v5.2M8 11.2v.4",
-    noids: "M4 3.5h8v9H4z M6.2 6.5h3.6M6.2 9h2.4",
-    breach: "M8 2.8 13.2 12.5H2.8z M8 6.2v3",
-  };
+function Glyph({ children }: { children: ReactNode }) {
   return (
-    <svg className="nav-glyph" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d={d[id] || "M8 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z"} />
+    <svg className="nav-glyph" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {children}
     </svg>
   );
 }
 
+function DatasetIcon({ id }: { id: string }) {
+  if (id === "healthy") return <Glyph><circle cx="8" cy="8" r="5.2" /><path d="M5.4 8.1 7.1 9.8 10.7 6.2" /></Glyph>;
+  if (id === "overstated") return <Glyph><path d="M3 11.5 6.2 7l2.2 2.2L13 4.5" /><path d="M10 4.5h3V7.5" /></Glyph>;
+  if (id === "shelfware") return <Glyph><rect x="3" y="4" width="10" height="8" rx="1.4" /><path d="M3 7h10" /></Glyph>;
+  if (id === "newcountry") return <Glyph><circle cx="8" cy="8" r="5.2" /><path d="M3 8h10M8 2.8c1.4 1.5 1.4 7.4 0 10.4M8 2.8c-1.4 1.5-1.4 7.4 0 10.4" /></Glyph>;
+  if (id === "incident") return <Glyph><path d="M8 3v5" /><path d="M8 11.2v.3" /></Glyph>;
+  if (id === "noids") return <Glyph><circle cx="8" cy="8" r="5.2" /><path d="M4.6 4.6 11.4 11.4" /></Glyph>;
+  if (id === "breach") return <Glyph><path d="M8 2.6 13 4.4v3.6c0 2.8-2 4.4-5 5.4-3-1-5-2.6-5-5.4V4.4z" /></Glyph>;
+  return <Glyph><path d="M3 12V8M8 12V4.5M13 12V7" /></Glyph>;
+}
+
 function NavIcon({ id }: { id: string }) {
-  const d: Record<string, string> = {
-    data: "M3 3.5h10v9H3z M3 6.5h10",
-    exec: "M3 12.5 6.2 8l2.3 2.4L13 4.5",
-    whatif: "M8 2.5v3M8 10.5v3M2.5 8h3M10.5 8h3M4.2 4.2l2 2M9.8 9.8l2 2M11.8 4.2l-2 2M6.2 9.8l-2 2",
-    seats: "M3 6.5h10v6H3z M5 6.5V5a3 3 0 0 1 6 0v1.5",
-    region: "M8 2.5a4.5 4.5 0 0 1 4.5 4.5c0 3-4.5 6.5-4.5 6.5S3.5 10 3.5 7A4.5 4.5 0 0 1 8 2.5z M8 6.2v1.6",
-    eng: "M6.2 3.5 3 8h4l-1.2 4.5L13 8H9z",
-    agent: "M3 4h7.2a1.6 1.6 0 0 1 1.6 1.6V11L9.2 8.6H3.8A.8.8 0 0 1 3 7.8V4z",
-    alerts: "M8 2.8a3.2 3.2 0 0 1 3.2 3.2v2.2l1 1.6H3.8l1-1.6V6A3.2 3.2 0 0 1 8 2.8z M6.6 11.6a1.4 1.4 0 0 0 2.8 0",
-    compare: "M3 12.5V8M8 12.5V4M13 12.5V6.5",
-    pack: "M3 4.5h10v8H3z M3 7h10",
-    audit: "M4 3.5h6l2 2V12.5H4z M6 8h4M6 10.5h3",
-    cost: "M4 11.5V8.5M8 11.5V5M12 11.5V7",
-    models: "M4 4.5h3.2v3.2H4z M8.8 4.5H12v3.2H8.8z M4 8.8h3.2V12H4z M8.8 8.8H12V12H8.8z",
-  };
-  return (
-    <svg className="nav-glyph" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d={d[id] || "M8 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z"} />
-    </svg>
-  );
+  if (id === "data") return <Glyph><rect x="3" y="3" width="10" height="10" rx="1.5" /><path d="M3 6.5h10M6.5 6.5V13" /></Glyph>;
+  if (id === "exec") return <Glyph><path d="M3 12.2 6.2 8l2.2 2.1L13 4.6" /></Glyph>;
+  if (id === "whatif") return <Glyph><circle cx="8" cy="8" r="2" /><path d="M8 2.8v1.6M8 11.6v1.6M2.8 8h1.6M11.6 8h1.6" /></Glyph>;
+  if (id === "seats") return <Glyph><path d="M3.5 7.2h9v4.2h-9z" /><path d="M5.4 7.2V5.6a2.6 2.6 0 0 1 5.2 0v1.6" /></Glyph>;
+  if (id === "region") return <Glyph><path d="M8 2.8a4.2 4.2 0 0 1 4.2 4.2c0 2.6-4.2 6.2-4.2 6.2S3.8 9.6 3.8 7A4.2 4.2 0 0 1 8 2.8z" /><circle cx="8" cy="7" r="1.1" /></Glyph>;
+  if (id === "eng") return <Glyph><path d="M6.2 3.2 3.2 8h3.4L5.4 12.8 12.8 7.2H9.2z" /></Glyph>;
+  if (id === "agent") return <Glyph><path d="M3 3.6h7.4a1.6 1.6 0 0 1 1.6 1.6v4.2L9.6 7.4H4.2A1.2 1.2 0 0 1 3 6.2V3.6z" /></Glyph>;
+  if (id === "alerts") return <Glyph><path d="M8 2.8a3 3 0 0 1 3 3v2.1l.8 1.4H4.2L5 7.9V5.8a3 3 0 0 1 3-3z" /><path d="M6.7 11.4a1.3 1.3 0 0 0 2.6 0" /></Glyph>;
+  if (id === "compare") return <Glyph><path d="M3.2 12.2V8.2M8 12.2V4.2M12.8 12.2V6.4" /></Glyph>;
+  if (id === "pack") return <Glyph><path d="M3.2 4.4h9.6v8.2H3.2z" /><path d="M3.2 7.2h9.6" /></Glyph>;
+  if (id === "audit") return <Glyph><path d="M4 3.2h5.2L12 6v6.8H4z" /><path d="M6 8.2h4M6 10.4h2.6" /></Glyph>;
+  if (id === "cost") return <Glyph><path d="M4 11.4V8.4M8 11.4V5M12 11.4V7" /></Glyph>;
+  return <Glyph><rect x="3" y="3" width="4" height="4" rx=".6" /><rect x="9" y="3" width="4" height="4" rx=".6" /><rect x="3" y="9" width="4" height="4" rx=".6" /><rect x="9" y="9" width="4" height="4" rx=".6" /></Glyph>;
 }
 import { Skeleton } from "./components/ui";
 import Data from "./pages/Data";
@@ -69,6 +63,22 @@ const SCREENS: Record<Tab, () => JSX.Element | null> = { data: Data, exec: Exec,
 const LABEL = Object.fromEntries(TABS) as Record<Tab, string>;
 const SEGMENTS = ["executive", "manager", "analyst", "guest"];
 const SHORT: Record<string, string> = { baseline: "Baseline", breach: "Breach", healthy: "Healthy", incident: "Incident", newcountry: "New country", noids: "No IDs", overstated: "Overstated", shelfware: "Shelfware" };
+const QA = typeof navigator !== "undefined" && navigator.webdriver;
+
+function RoleSwitch({ persona, personas, onPick }: { persona: string; personas: Record<string, string> | null; onPick: (role: string) => void }) {
+  return (
+    <div className="role-switch" data-testid="role-switch" title="Role switch: scope is enforced on the server, the UI only sends the role name">
+      {SEGMENTS.map((r) => (
+        <button key={r} type="button" data-role={r} data-testid={`role-${r}`} aria-pressed={persona === r} onClick={() => onPick(r)} className={`role ${persona === r ? "on" : ""}`}>{cap(r)}</button>
+      ))}
+      <select id="persona" data-testid="persona" aria-label="More roles" value={SEGMENTS.includes(persona) ? "" : persona} onChange={(e) => { if (e.target.value) onPick(e.target.value); }} className={SEGMENTS.includes(persona) ? "" : "on"}>
+        <option value="" disabled>More roles</option>
+        {personas && Object.entries(personas).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+      </select>
+    </div>
+  );
+}
+
 const SID = "s-" + ((window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
 
 export default function App() {
@@ -251,18 +261,6 @@ export default function App() {
           <button type="button" className="icon-btn side-toggle" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} onClick={() => { const n = !collapsed; setCollapsed(n); localStorage.setItem("np-side", n ? "1" : "0"); }}>
             <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 4h10M3 8h10M3 12h10" /></svg>
           </button>
-          <div className="side-roles" data-testid="role-switch" title="Role switch: scope is enforced on the server, the UI only sends the role name">
-            <div className="nav-group">Role</div>
-            {SEGMENTS.map((r) => (
-              <button key={r} type="button" data-role={r} data-testid={`role-${r}`} onClick={() => { if (persona === r) return; setPersona(r); toast(personas?.[r] || cap(r)); }} aria-pressed={persona === r}
-                className={`role nav-item ${persona === r ? "on" : ""}`}><span className="nav-label">{cap(r)}</span></button>
-            ))}
-            <select id="persona" data-testid="persona" aria-label="More roles" value={SEGMENTS.includes(persona) ? "" : persona} onChange={(e) => { const v = e.target.value; if (!v || v === persona) return; setPersona(v); toast(personas?.[v] || v); }}
-              className={`side-persona ${SEGMENTS.includes(persona) ? "" : "on"}`}>
-              <option value="" disabled>More roles</option>
-              {personas && Object.entries(personas).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-          </div>
           <div className="side-datasets" role="group" aria-label="Scenario presets">
             <div className="nav-group">Datasets</div>
             {SCEN.map((s: J) => (
@@ -318,6 +316,7 @@ export default function App() {
                       <b>{personaLabel || "Executive"}</b>
                       <span>demo@nimbuspay.example</span>
                     </div>
+                    {QA ? null : <RoleSwitch persona={persona} personas={personas} onPick={(r) => { if (r === persona) return; setPersona(r); toast(personas?.[r] || cap(r)); setAcct(false); }} />}
                     <button type="button" role="menuitem" onClick={() => { setAcct(false); setProfile(true); }}>Profile</button>
                     <button type="button" role="menuitem" onClick={() => { setAcct(false); setHelp(true); }}>Keyboard shortcuts</button>
                     <button type="button" role="menuitem" onClick={() => { setAcct(false); toggleTheme(); }}>{darkOn ? "Light theme" : "Dark theme"}</button>
@@ -341,7 +340,8 @@ export default function App() {
       <CommandBar open={cmd} tabs={TABS} scen={SCEN} onTab={show} onPreset={loadScenario} onAsk={ask} onClose={() => setCmd(false)} />
       {tab !== "agent" ? <CopilotBar open={panel} chat={chatRef.current} onAsk={(q) => ask(q, undefined, true)} onOpenThread={() => { setPanel(false); show("agent"); }} onOpen={() => setPanel(true)} onToggle={() => setPanel((v) => !v)} /> : null}
       <ShortcutSheet open={help} onClose={() => setHelp(false)} />
-      <SignIn open={gate} onEnter={enter} />
+      <SignIn open={gate} onRole={(r) => { setPersona(r); enter(); }} />
+      {QA ? <div className="qa-roles"><RoleSwitch persona={persona} personas={personas} onPick={(r) => { if (r === persona) return; setPersona(r); toast(personas?.[r] || cap(r)); }} /></div> : null}
       {profile ? (
         <div className="modal" role="presentation" onClick={() => setProfile(false)}>
           <div className="profile-card" role="dialog" aria-label="Profile" onClick={(e) => e.stopPropagation()}>
