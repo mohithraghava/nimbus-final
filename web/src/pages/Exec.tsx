@@ -77,7 +77,7 @@ export default function Exec() {
         </div>
       </div>
       <h2 id="exec-metrics">Headline governed metrics</h2>
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 items-start">
         {["M01", "M02", "M04", "M07", "M10", "M17", "M18"].map((id) => (
           <div key={id} className="metric-card">
             <Kpi id={id} label={M[id].label + (M[id].approximate ? " (approx.)" : "")} val={fmt(M[id].value, M[id].unit)} sub={openMetric === id ? "" : M[id].note} />
