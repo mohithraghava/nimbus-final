@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChatMsg, Tab } from "../lib/store";
+import { toggleSpeech } from "../lib/speak";
 
 function motionMs() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 220;
@@ -32,27 +33,32 @@ export function SignIn({ open, onEnter }: { open: boolean; onEnter: () => void }
   const { present, leaving } = usePresence(open);
   const email = useRef<HTMLInputElement>(null);
   if (!present) return null;
+  const enter = (e?: { preventDefault: () => void }) => { e?.preventDefault(); onEnter(); };
   return (
     <div className={`signin ${leaving ? "leaving" : ""}`} role="dialog" aria-label="Sign in">
       <div className="signin-card glass">
-        <p className="eyebrow">NimbusPay</p>
-        <h2>Sign in to Adoption Insights</h2>
-        <p className="muted">Your company account would set the role. This demo does not send the email anywhere.</p>
-        <label className="field">Work email
-          <input ref={email} type="email" autoComplete="username" placeholder="you@company.com" aria-label="Work email" />
-        </label>
-        <div className="signin-idps">
-          <button type="button" className="ghost" onClick={onEnter}>Microsoft Entra</button>
-          <button type="button" className="ghost" onClick={onEnter}>Google Workspace</button>
-          <button type="button" className="ghost" onClick={onEnter}>Okta</button>
+        <div className="signin-copy">
+          <p className="eyebrow">NimbusPay</p>
+          <h2>Sign in to Adoption Insights</h2>
+          <p className="muted">Your company account sets the role. This screen sends nothing, and you can skip it.</p>
+          <p className="eyebrow">Who can sign in</p>
+          <ul className="signin-roles">
+            {WORKSPACE_ROLES.map(([name, scope]) => (
+              <li key={name}><b>{name}</b><span>{scope}</span></li>
+            ))}
+          </ul>
         </div>
-        <p className="eyebrow">Roles this workspace recognises</p>
-        <ul className="signin-roles">
-          {WORKSPACE_ROLES.map(([name, scope]) => (
-            <li key={name}><b>{name}</b><span>{scope}</span></li>
-          ))}
-        </ul>
-        <button type="button" className="btn signin-skip" onClick={onEnter}>Continue without signing in</button>
+        <form className="signin-form" onSubmit={enter}>
+          <label className="field">Work email
+            <input ref={email} type="email" autoComplete="username" placeholder="you@company.com" aria-label="Work email" />
+          </label>
+          <button className="btn" type="submit">Continue</button>
+          <p className="signin-or">or your identity provider</p>
+          <button type="button" className="idp" onClick={onEnter}>Microsoft Entra</button>
+          <button type="button" className="idp" onClick={onEnter}>Google Workspace</button>
+          <button type="button" className="idp" onClick={onEnter}>Okta</button>
+          <button type="button" className="ghost signin-skip" onClick={onEnter}>Continue without signing in</button>
+        </form>
       </div>
     </div>
   );
@@ -169,7 +175,7 @@ export function CopilotBar({ open, chat, onAsk, onOpenThread, onOpen, onToggle }
           <div className="log" ref={log}>
             {chat.length ? chat.map((m, i) => m.me !== undefined
               ? <div key={i} className="msg me">{m.me}</div>
-              : <div key={i} className={`msg bot ${m.bot?.type || ""}`}>{m.streaming ? <span className="cursor">{m.bot?.text || <span className="dots"><i /><i /><i /></span>}</span> : m.bot?.text}{m.plan && m.plan.state === "pending" ? <button type="button" className="ghost" onClick={onOpenThread}>Review task</button> : null}</div>)
+              : <div key={i} className={`msg bot ${m.bot?.type || ""}`}>{m.streaming ? <span className="cursor">{m.bot?.text || <span className="dots"><i /><i /><i /></span>}</span> : m.bot?.text}{!m.streaming && m.bot?.text ? <button type="button" className="ghost speak" aria-label="Read this answer aloud" onClick={() => toggleSpeech(m.bot?.text || "")}>Listen</button> : null}{m.plan && m.plan.state === "pending" ? <button type="button" className="ghost" onClick={onOpenThread}>Review task</button> : null}</div>)
               : <p className="muted">Ask about adoption, value, or reliability.</p>}
           </div>
         </div>

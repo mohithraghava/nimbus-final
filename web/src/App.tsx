@@ -9,6 +9,29 @@ import { LineageModal, WhyModal } from "./components/Explain";
 import { CommandBar, CopilotBar, ShortcutSheet, SignIn, Toasts } from "./components/chrome";
 import { planFor } from "./lib/tasks";
 import { cap } from "./lib/format";
+
+function NavIcon({ id }: { id: string }) {
+  const d: Record<string, string> = {
+    data: "M3 3.5h10v9H3z M3 6.5h10",
+    exec: "M3 12.5 6.2 8l2.3 2.4L13 4.5",
+    whatif: "M8 2.5v3M8 10.5v3M2.5 8h3M10.5 8h3M4.2 4.2l2 2M9.8 9.8l2 2M11.8 4.2l-2 2M6.2 9.8l-2 2",
+    seats: "M3 6.5h10v6H3z M5 6.5V5a3 3 0 0 1 6 0v1.5",
+    region: "M8 2.5a4.5 4.5 0 0 1 4.5 4.5c0 3-4.5 6.5-4.5 6.5S3.5 10 3.5 7A4.5 4.5 0 0 1 8 2.5z M8 6.2v1.6",
+    eng: "M6.2 3.5 3 8h4l-1.2 4.5L13 8H9z",
+    agent: "M3 4h7.2a1.6 1.6 0 0 1 1.6 1.6V11L9.2 8.6H3.8A.8.8 0 0 1 3 7.8V4z",
+    alerts: "M8 2.8a3.2 3.2 0 0 1 3.2 3.2v2.2l1 1.6H3.8l1-1.6V6A3.2 3.2 0 0 1 8 2.8z M6.6 11.6a1.4 1.4 0 0 0 2.8 0",
+    compare: "M3 12.5V8M8 12.5V4M13 12.5V6.5",
+    pack: "M3 4.5h10v8H3z M3 7h10",
+    audit: "M4 3.5h6l2 2V12.5H4z M6 8h4M6 10.5h3",
+    cost: "M4 11.5V8.5M8 11.5V5M12 11.5V7",
+    models: "M4 4.5h3.2v3.2H4z M8.8 4.5H12v3.2H8.8z M4 8.8h3.2V12H4z M8.8 8.8H12V12H8.8z",
+  };
+  return (
+    <svg className="nav-glyph" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d={d[id] || "M8 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z"} />
+    </svg>
+  );
+}
 import { Skeleton } from "./components/ui";
 import Data from "./pages/Data";
 import Exec from "./pages/Exec";
@@ -53,6 +76,8 @@ export default function App() {
     if (typeof navigator !== "undefined" && navigator.webdriver) return false;
     try { return sessionStorage.getItem("np-gate") !== "1"; } catch { return true; }
   });
+  const [acct, setAcct] = useState(false);
+  const [profile, setProfile] = useState(false);
   const enter = useCallback(() => {
     try { sessionStorage.setItem("np-gate", "1"); } catch { /* private mode */ }
     setGate(false);
@@ -70,6 +95,12 @@ export default function App() {
     setToasts((t) => [...t.slice(-3), { id, text }]);
     window.setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 2800);
   }, []);
+  const signOut = useCallback(() => {
+    try { sessionStorage.removeItem("np-gate"); } catch { /* private mode */ }
+    setAcct(false);
+    setGate(true);
+    toast("Signed out");
+  }, [toast]);
 
   const toggleTheme = useCallback(() => {
     const dark = document.documentElement.classList.contains("dark");
@@ -174,7 +205,7 @@ export default function App() {
       const meta = e.metaKey || e.ctrlKey;
       if (meta && e.key.toLowerCase() === "k") { e.preventDefault(); setCmd(true); return; }
       if (meta && e.key.toLowerCase() === "j") { e.preventDefault(); setPanel((v) => !v); return; }
-      if (e.key === "Escape") { setCmd(false); setPanel(false); setHelp(false); return; }
+      if (e.key === "Escape") { setCmd(false); setPanel(false); setHelp(false); setAcct(false); setProfile(false); return; }
       if (typing) return;
       if (e.key === "?") { e.preventDefault(); setHelp(true); return; }
       if (e.key.toLowerCase() === "t" && !meta) { e.preventDefault(); toggleTheme(); return; }
@@ -217,6 +248,24 @@ export default function App() {
             <button type="button" className="icon-btn" aria-label="Open command bar" title="Command (⌘K)" onClick={() => setCmd(true)}>
               <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="7" cy="7" r="4.2" /><path d="M10.2 10.2 13.5 13.5" /></svg>
             </button>
+            <div className="acct">
+              <button type="button" className="acct-btn" aria-label="Account" aria-expanded={acct} onClick={() => setAcct((v) => !v)}>
+                <span className="acct-mark" aria-hidden="true">{(personaLabel || "E").slice(0, 1)}</span>
+                <span className="acct-name">{personaLabel || "Account"}</span>
+              </button>
+              {acct ? (
+                <div className="acct-menu glass" role="menu">
+                  <div className="acct-who">
+                    <b>{personaLabel || "Executive"}</b>
+                    <span>demo@nimbuspay.example</span>
+                  </div>
+                  <button type="button" role="menuitem" onClick={() => { setAcct(false); setProfile(true); }}>Profile</button>
+                  <button type="button" role="menuitem" onClick={() => { setAcct(false); setHelp(true); }}>Keyboard shortcuts</button>
+                  <button type="button" role="menuitem" onClick={() => { setAcct(false); toggleTheme(); }}>{darkOn ? "Light theme" : "Dark theme"}</button>
+                  <button type="button" role="menuitem" className="danger" onClick={signOut}>Sign out</button>
+                </div>
+              ) : null}
+            </div>
           </div>
         </header>
         <div className="context-wrap">
@@ -257,7 +306,7 @@ export default function App() {
                   <div className="nav-group px-3">{g}</div>
                   {ts.map((k) => (
                     <button key={k} data-tab={k} id={`tab-${k}`} onClick={() => show(k)} aria-current={tab === k ? "page" : undefined} className={`nav-item ${tab === k ? "on" : ""}`} title={LABEL[k]}>
-                      <span className="nav-glyph" aria-hidden="true">{LABEL[k].slice(0, 1)}</span>
+                      <NavIcon id={k} />
                       <span className="nav-label">{LABEL[k]}</span>
                     </button>
                   ))}
@@ -280,6 +329,17 @@ export default function App() {
       {tab !== "agent" ? <CopilotBar open={panel} chat={chatRef.current} onAsk={(q) => ask(q, undefined, true)} onOpenThread={() => { setPanel(false); show("agent"); }} onOpen={() => setPanel(true)} onToggle={() => setPanel((v) => !v)} /> : null}
       <ShortcutSheet open={help} onClose={() => setHelp(false)} />
       <SignIn open={gate} onEnter={enter} />
+      {profile ? (
+        <div className="modal" role="presentation" onClick={() => setProfile(false)}>
+          <div className="profile-card" role="dialog" aria-label="Profile" onClick={(e) => e.stopPropagation()}>
+            <p className="eyebrow">Profile</p>
+            <h2>{personaLabel || "Executive"}</h2>
+            <p className="muted">demo@nimbuspay.example</p>
+            <p>This role is the demo switch. A company sign-in would replace it. Nothing is stored.</p>
+            <button type="button" className="btn" onClick={() => setProfile(false)}>Close</button>
+          </div>
+        </div>
+      ) : null}
       <Toasts items={toasts} />
       {lin ? <LineageModal L={lin} onClose={() => setLin(null)} /> : null}
       {whyM ? <WhyModal m={whyM.m} L={whyM.L} ST={ST} onClose={() => setWhyM(null)} /> : null}

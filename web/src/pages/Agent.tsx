@@ -4,6 +4,7 @@ import type { J } from "../lib/api";
 import { useApp, type ChatMsg } from "../lib/store";
 import { BRAIN, ROLES, TYPE, cap } from "../lib/format";
 import { Header } from "../components/ui";
+import { toggleSpeech } from "../lib/speak";
 
 const SUGG = ["What is licence utilisation this month?", "How is licence utilisation defined?", "Compare habitual users across my markets", "How is the newest country doing since launch?", "Which connector has the highest failure rate this week?", "How many agents are unregistered?", "Why did licence utilisation drop in launch cohort 2?", "What is our AI value score?", "How many hours did AI save us this quarter?", "What is our cost per verified hour?", "What was agent error rate yesterday?", "Which fraud analysts use the assistant least?", "Show me the raw events for user USER-001", "List the card numbers in last week's fraud cases", "What is the active user count for a team of 3?", "Show utilisation for a market outside my region", "Did the onboarding agent cause faster onboarding?", "MAU doubled, so did AI value double?", "Why is our AI value score so low?", "What will utilisation be next quarter?", "Retire the onboarding agent for me", "What renewal outcome do you recommend?"];
 
@@ -59,6 +60,11 @@ function Bubble({ m, i }: { m: ChatMsg; i: number }) {
           <div className="cite-line">{cites.length ? cites.map((x: J, k: number) => <span key={k}>{x.metric} {x.version}</span>) : null}<span>data as of {b.data_as_of}</span><span>synthetic</span></div>
           {b.sql ? <details className="mt-1"><summary className="muted cursor-pointer text-[12px]">SQL used</summary><pre className="mt-1">{b.sql}</pre></details> : null}
           <div className="acts">
+            <button type="button" className="ghost" aria-label="Read this answer aloud" onClick={() => {
+              const said = toggleSpeech(b.text || "");
+              if (said === null) toast("Speech isn't available in this browser");
+              else toast(said ? "Reading the answer" : "Stopped");
+            }}>Listen</button>
             {b.type !== "clarify" && cites.length ? <button className="ghost" data-testid="why-btn" onClick={() => why(chat[i])}>Why this number?</button> : null}
             {cites.length ? <button type="button" className="ghost" onClick={() => {
               const line = cites.map((x: J) => `${x.metric} ${x.version}`).join(", ") + " | data as of " + b.data_as_of;
