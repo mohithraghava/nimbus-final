@@ -213,7 +213,9 @@ export function CopilotBar({ open, chat, onAsk, onOpenThread, onOpen, onToggle }
           <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="6" y="2" width="4" height="8" rx="2" /><path d="M4 8a4 4 0 0 0 8 0M8 12v2" /></svg>
         </button>
         <input ref={ref} aria-label="Ask from the bar" placeholder="Ask about this dataset" onFocus={onOpen} />
-        <button className="btn" type="submit">Ask</button>
+        <button className="btn send" type="submit" aria-label="Send">
+          <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
+        </button>
       </form>
     </div>
   );

@@ -262,7 +262,7 @@ export default function App() {
             <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 4h10M3 8h10M3 12h10" /></svg>
           </button>
           <div className="side-datasets" role="group" aria-label="Scenario presets">
-            <div className="nav-group">Datasets</div>
+            <div className="nav-group">Presets</div>
             {SCEN.map((s: J) => (
               <button key={s.key} type="button" className="nav-item" data-preset={s.key} aria-pressed={ST?.dataset === s.key} title={s.label} onClick={() => loadScenario(s.key)}>
                 <DatasetIcon id={s.key} />

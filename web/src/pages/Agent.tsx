@@ -145,7 +145,9 @@ export default function Agent() {
           <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="6" y="2" width="4" height="8" rx="2" /><path d="M4 8a4 4 0 0 0 8 0M8 12v2" /></svg>
         </button>
         <input id="askq" data-testid="ask-input" ref={input} className="flex-1" placeholder="Ask about this dataset" aria-label="Ask the agent" />
-        <button className="btn" data-testid="ask-btn">Ask</button>
+        <button className="btn send" data-testid="ask-btn" aria-label="Send">
+          <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
+        </button>
       </form>
     </div>
   );

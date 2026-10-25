@@ -11,6 +11,7 @@ export default function Exec() {
   const { ST } = useApp(); const M = ST.metrics, s = ST.score, rn = ST.renewal, f = ST.funnel;
   const [more, setMore] = useState(false);
   const [openMetric, setOpenMetric] = useState("");
+  const [openRow, setOpenRow] = useState("");
   const mau = Number(ST.users.vendor_mau_proxy) || 0;
   const habitual = Number(f.LF6) || 0;
   const paid = Number(f.LF1) || 0;
@@ -86,7 +87,7 @@ export default function Exec() {
               <div className="metric-more">
                 <div className="metric-more-val">{fmt(M[id].value, M[id].unit)}</div>
                 <p>{M[id].note}</p>
-                <span>{id} {M[id].version}</span>
+                <span>{id}</span>
               </div>
             ) : null}
           </div>
@@ -96,16 +97,22 @@ export default function Exec() {
       <div className="metric-list">
         <table>
           <tbody>
-            <tr><th>ID</th><th>Version</th><th>Metric</th><th className="!text-right">Value</th><th>Note</th></tr>
-            {(more ? ids : ids.slice(0, 8)).map((id) => (
+            <tr><th>ID</th><th>Metric</th><th className="!text-right">Value</th><th></th></tr>
+            {(more ? ids : ids.slice(0, 8)).flatMap((id) => [
               <tr key={id} data-metric={id} title="Click: explain this number" className="cursor-pointer">
                 <td className="whitespace-nowrap"><b>{id}</b></td>
-                <td className="whitespace-nowrap text-muted">{M[id].version}</td>
                 <td>{M[id].label}</td>
                 <td className="!text-right tabular-nums font-semibold">{fmt(M[id].value, M[id].unit)}</td>
-                <td className="muted">{M[id].note}</td>
-              </tr>
-            ))}
+                <td className="!text-right"><button type="button" className="text-btn" aria-expanded={openRow === id} onClick={(e) => { e.stopPropagation(); setOpenRow(openRow === id ? "" : id); }}>{openRow === id ? "Show less" : "View more"}</button></td>
+              </tr>,
+              openRow === id ? (
+                <tr key={id + "-more"}>
+                  <td colSpan={4}>
+                    <div className="metric-more"><p>{M[id].note || "No further note."}</p></div>
+                  </td>
+                </tr>
+              ) : null,
+            ])}
           </tbody>
         </table>
       </div>
