@@ -516,6 +516,7 @@ html.dark .tile, html.dark .outcard, html.dark .metric-list, html.dark .search-p
 .signin {
   position: fixed; inset: 0; z-index: 100;
   display: grid; place-items: center; padding: 24px;
+  overflow: auto;
   background: color-mix(in srgb, var(--np-canvas) 42%, transparent);
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
