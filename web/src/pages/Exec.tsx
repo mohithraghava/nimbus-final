@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { J } from "../lib/api";
 import { useApp } from "../lib/store";
 import { fmt, keepTogether, oc } from "../lib/format";
@@ -8,6 +9,7 @@ const STAGES: [string, string][] = [["LF1", "Purchased"], ["LF2", "Assigned"], [
 
 export default function Exec() {
   const { ST } = useApp(); const M = ST.metrics, s = ST.score, rn = ST.renewal, f = ST.funnel;
+  const [more, setMore] = useState(false);
   const mau = Number(ST.users.vendor_mau_proxy) || 0;
   const habitual = Number(f.LF6) || 0;
   const paid = Number(f.LF1) || 0;
@@ -74,7 +76,7 @@ export default function Exec() {
         </div>
       </div>
       <h2 id="exec-metrics">Headline governed metrics</h2>
-      <div className="grid gap-x-8 gap-y-8 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         {["M01", "M02", "M04", "M07", "M10", "M17", "M18"].map((id) => <Kpi key={id} id={id} label={M[id].label + (M[id].approximate ? " (approx.)" : "")} val={fmt(M[id].value, M[id].unit)} sub={M[id].note} />)}
       </div>
       <h2 id="exec-catalogue">Metric catalogue</h2>
@@ -82,7 +84,7 @@ export default function Exec() {
         <table>
           <tbody>
             <tr><th>ID</th><th>Version</th><th>Metric</th><th className="!text-right">Value</th><th>Note</th></tr>
-            {ids.map((id) => (
+            {(more ? ids : ids.slice(0, 8)).map((id) => (
               <tr key={id} data-metric={id} title="Click: explain this number" className="cursor-pointer">
                 <td className="whitespace-nowrap"><b>{id}</b></td>
                 <td className="whitespace-nowrap text-muted">{M[id].version}</td>
@@ -94,6 +96,7 @@ export default function Exec() {
           </tbody>
         </table>
       </div>
+      {ids.length > 8 ? <button type="button" className="ghost mt-3" onClick={() => setMore((v) => !v)}>{more ? "Show fewer" : "View more"}</button> : null}
     </>
   );
 }

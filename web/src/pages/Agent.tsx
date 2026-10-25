@@ -4,7 +4,7 @@ import type { J } from "../lib/api";
 import { useApp, type ChatMsg } from "../lib/store";
 import { BRAIN, ROLES, TYPE, cap } from "../lib/format";
 import { Header } from "../components/ui";
-import { toggleSpeech } from "../lib/speak";
+import { startMic, toggleSpeech } from "../lib/speak";
 
 const SUGG = ["What is licence utilisation this month?", "How is licence utilisation defined?", "Compare habitual users across my markets", "How is the newest country doing since launch?", "Which connector has the highest failure rate this week?", "How many agents are unregistered?", "Why did licence utilisation drop in launch cohort 2?", "What is our AI value score?", "How many hours did AI save us this quarter?", "What is our cost per verified hour?", "What was agent error rate yesterday?", "Which fraud analysts use the assistant least?", "Show me the raw events for user USER-001", "List the card numbers in last week's fraud cases", "What is the active user count for a team of 3?", "Show utilisation for a market outside my region", "Did the onboarding agent cause faster onboarding?", "MAU doubled, so did AI value double?", "Why is our AI value score so low?", "What will utilisation be next quarter?", "Retire the onboarding agent for me", "What renewal outcome do you recommend?"];
 
@@ -50,6 +50,13 @@ function Bubble({ m, i }: { m: ChatMsg; i: number }) {
         {b.latency_ms !== undefined ? <span className="tag lat" data-testid="latency">{b.latency_ms} ms</span> : null}
         {typeof b.confidence === "number" ? <span className="tag lat" data-testid="confidence" title={b.confidence_basis || ""}>confidence {Math.round(b.confidence * 100)}%</span> : null}
       </div>
+      {m.streaming ? (
+        <ol className="thought" aria-label="Working">
+          <li className="on">Thinking</li>
+          <li className={b.mode && b.mode !== "..." ? "on" : ""}>Checking the rules</li>
+          <li className={b.text ? "on" : ""}>Gathering the figures</li>
+        </ol>
+      ) : null}
       {b.followup ? <div className="fu" data-testid="followup">Follow-up, read as: "{b.followup.interpreted_as}"</div> : null}
       {m.streaming ? <div id="stream-text" className="cursor">{b.text || <span className="dots"><i /><i /><i /></span>}</div> : <div>{b.text}</div>}
       {b.safe_alternative ? <div className="mt-1.5"><b>Safe alternative:</b> {b.safe_alternative}</div> : null}
@@ -103,7 +110,7 @@ function Bubble({ m, i }: { m: ChatMsg; i: number }) {
 }
 
 export default function Agent() {
-  const { personaLabel, chat, ask } = useApp();
+  const { personaLabel, chat, ask, toast } = useApp();
   const [brain, setBrain] = useState("checking..."), [brainTip, setBrainTip] = useState("");
   const [all, setAll] = useState(false);
   const box = useRef<HTMLDivElement>(null), input = useRef<HTMLInputElement>(null);
@@ -131,6 +138,12 @@ export default function Agent() {
           : <div className="muted">Pick a question, or type your own. A follow-up works after that.</div>}
       </div>
       <form id="askf" className="composer glass copilot-dock" onSubmit={submit}>
+        <button type="button" className="icon-btn" aria-label="Speak your question" onClick={() => {
+          const ok = startMic((t) => { if (input.current) input.current.value = t; });
+          if (!ok) toast("The microphone isn't available in this browser");
+        }}>
+          <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="6" y="2" width="4" height="8" rx="2" /><path d="M4 8a4 4 0 0 0 8 0M8 12v2" /></svg>
+        </button>
         <input id="askq" data-testid="ask-input" ref={input} className="flex-1" placeholder="Ask about this dataset" aria-label="Ask the agent" />
         <button className="btn" data-testid="ask-btn">Ask</button>
       </form>

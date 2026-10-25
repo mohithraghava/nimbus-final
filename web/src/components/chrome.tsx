@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChatMsg, Tab } from "../lib/store";
-import { toggleSpeech } from "../lib/speak";
+import { startMic, toggleSpeech } from "../lib/speak";
 
 function motionMs() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 220;
@@ -175,7 +175,12 @@ export function CopilotBar({ open, chat, onAsk, onOpenThread, onOpen, onToggle }
           <div className="log" ref={log}>
             {chat.length ? chat.map((m, i) => m.me !== undefined
               ? <div key={i} className="msg me">{m.me}</div>
-              : <div key={i} className={`msg bot ${m.bot?.type || ""}`}>{m.streaming ? <span className="cursor">{m.bot?.text || <span className="dots"><i /><i /><i /></span>}</span> : m.bot?.text}{!m.streaming && m.bot?.text ? <button type="button" className="ghost speak" aria-label="Read this answer aloud" onClick={() => toggleSpeech(m.bot?.text || "")}>Listen</button> : null}{m.plan && m.plan.state === "pending" ? <button type="button" className="ghost" onClick={onOpenThread}>Review task</button> : null}</div>)
+              : <div key={i} className={`msg bot ${m.bot?.type || ""}`}>
+                  {m.streaming ? <ol className="thought" aria-label="Working"><li className="on">Thinking</li><li className={m.bot?.text ? "on" : ""}>Checking the rules</li><li className={m.bot?.text ? "on" : ""}>Gathering the figures</li></ol> : null}
+                  {m.streaming ? <span className="cursor">{m.bot?.text || <span className="dots"><i /><i /><i /></span>}</span> : m.bot?.text}
+                  {!m.streaming && m.bot?.text ? <button type="button" className="ghost speak" aria-label="Read this answer aloud" onClick={() => toggleSpeech(m.bot?.text || "")}>Listen</button> : null}
+                  {m.plan && m.plan.state === "pending" ? <button type="button" className="ghost" onClick={onOpenThread}>Review task</button> : null}
+                </div>)
               : <p className="muted">Ask about adoption, value, or reliability.</p>}
           </div>
         </div>
@@ -190,6 +195,9 @@ export function CopilotBar({ open, chat, onAsk, onOpenThread, onOpen, onToggle }
       }}>
         <button type="button" className="icon-btn" aria-label={open ? "Collapse agent" : "Expand agent"} aria-expanded={open} onClick={onToggle}>
           <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 3.5h7.5a2 2 0 0 1 2 2V12L10 9.5H3a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z" /></svg>
+        </button>
+        <button type="button" className="icon-btn" aria-label="Speak your question" onClick={() => startMic((t) => { if (ref.current) ref.current.value = t; })}>
+          <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="6" y="2" width="4" height="8" rx="2" /><path d="M4 8a4 4 0 0 0 8 0M8 12v2" /></svg>
         </button>
         <input ref={ref} aria-label="Ask from the bar" placeholder="Ask about this dataset" onFocus={onOpen} />
         <button className="btn" type="submit">Ask</button>

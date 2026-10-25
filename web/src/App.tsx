@@ -10,6 +10,24 @@ import { CommandBar, CopilotBar, ShortcutSheet, SignIn, Toasts } from "./compone
 import { planFor } from "./lib/tasks";
 import { cap } from "./lib/format";
 
+function DatasetIcon({ id }: { id: string }) {
+  const d: Record<string, string> = {
+    baseline: "M3 12.5V8M8 12.5V4M13 12.5V6.5",
+    healthy: "M3.5 8.2 6.4 11 12.5 4.5",
+    overstated: "M8 3.2 13.2 12.5H2.8z",
+    shelfware: "M3 5.5h10v7H3z M3 8h10",
+    newcountry: "M8 2.8a5.2 5.2 0 1 0 .1 0z M3.2 8h9.6M8 2.8c1.6 1.6 1.6 8.8 0 10.4M8 2.8c-1.6 1.6-1.6 8.8 0 10.4",
+    incident: "M8 3v5.2M8 11.2v.4",
+    noids: "M4 3.5h8v9H4z M6.2 6.5h3.6M6.2 9h2.4",
+    breach: "M8 2.8 13.2 12.5H2.8z M8 6.2v3",
+  };
+  return (
+    <svg className="nav-glyph" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d={d[id] || "M8 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z"} />
+    </svg>
+  );
+}
+
 function NavIcon({ id }: { id: string }) {
   const d: Record<string, string> = {
     data: "M3 3.5h10v9H3z M3 6.5h10",
@@ -228,92 +246,87 @@ export default function App() {
 
   return (
     <AppCtx.Provider value={ctx}>
-      <div className="min-h-screen flex flex-col">
-        <header className="topbar">
-          <div className="brand-lock">
-            <div>
-              <div className="brand-name">NimbusPay</div>
-              <div className="brand-product">Adoption Insights</div>
-            </div>
+      <div className="app-frame min-h-screen">
+        <aside className={`shell-side ${collapsed ? "collapsed" : ""}`}>
+          <button type="button" className="icon-btn side-toggle" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} onClick={() => { const n = !collapsed; setCollapsed(n); localStorage.setItem("np-side", n ? "1" : "0"); }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 4h10M3 8h10M3 12h10" /></svg>
+          </button>
+          <div className="side-roles" data-testid="role-switch" title="Role switch: scope is enforced on the server, the UI only sends the role name">
+            <div className="nav-group">Role</div>
+            {SEGMENTS.map((r) => (
+              <button key={r} type="button" data-role={r} data-testid={`role-${r}`} onClick={() => { if (persona === r) return; setPersona(r); toast(personas?.[r] || cap(r)); }} aria-pressed={persona === r}
+                className={`role nav-item ${persona === r ? "on" : ""}`}><span className="nav-label">{cap(r)}</span></button>
+            ))}
+            <select id="persona" data-testid="persona" aria-label="More roles" value={SEGMENTS.includes(persona) ? "" : persona} onChange={(e) => { const v = e.target.value; if (!v || v === persona) return; setPersona(v); toast(personas?.[v] || v); }}
+              className={`side-persona ${SEGMENTS.includes(persona) ? "" : "on"}`}>
+              <option value="" disabled>More roles</option>
+              {personas && Object.entries(personas).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
           </div>
-          <div className="top-actions">
-            <span className="pill">Synthetic</span>
-            <button type="button" className="icon-btn" aria-label={darkOn ? "Switch to light theme" : "Switch to dark theme"} title="Theme (T)" onClick={toggleTheme}>
-              {darkOn ? (
-                <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="8" cy="8" r="3" /><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" /></svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M13.5 10.2A5.5 5.5 0 0 1 5.8 2.5 5.5 5.5 0 1 0 13.5 10.2z" /></svg>
-              )}
-            </button>
-            <button type="button" className="icon-btn" aria-label="Open command bar" title="Command (⌘K)" onClick={() => setCmd(true)}>
-              <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="7" cy="7" r="4.2" /><path d="M10.2 10.2 13.5 13.5" /></svg>
-            </button>
-            <div className="acct">
-              <button type="button" className="acct-btn" aria-label="Account" aria-expanded={acct} onClick={() => setAcct((v) => !v)}>
-                <span className="acct-mark" aria-hidden="true">{(personaLabel || "E").slice(0, 1)}</span>
-                <span className="acct-name">{personaLabel || "Account"}</span>
+          <div className="side-datasets" role="group" aria-label="Scenario presets">
+            <div className="nav-group">Datasets</div>
+            {SCEN.map((s: J) => (
+              <button key={s.key} type="button" className="nav-item" data-preset={s.key} aria-pressed={ST?.dataset === s.key} title={s.label} onClick={() => loadScenario(s.key)}>
+                <DatasetIcon id={s.key} />
+                <span className="nav-label">{SHORT[s.key] || s.label}</span>
               </button>
-              {acct ? (
-                <div className="acct-menu glass" role="menu">
-                  <div className="acct-who">
-                    <b>{personaLabel || "Executive"}</b>
-                    <span>demo@nimbuspay.example</span>
-                  </div>
-                  <button type="button" role="menuitem" onClick={() => { setAcct(false); setProfile(true); }}>Profile</button>
-                  <button type="button" role="menuitem" onClick={() => { setAcct(false); setHelp(true); }}>Keyboard shortcuts</button>
-                  <button type="button" role="menuitem" onClick={() => { setAcct(false); toggleTheme(); }}>{darkOn ? "Light theme" : "Dark theme"}</button>
-                  <button type="button" role="menuitem" className="danger" onClick={signOut}>Sign out</button>
-                </div>
-              ) : null}
-            </div>
+            ))}
+            <p id="ds" className="side-ds">{ST ? <>{ST.dataset_label} · {ST.data_as_of}</> : ""}</p>
           </div>
-        </header>
-        <div className="context-wrap">
-          <div className="search-pill">
-            <div className="roles flex items-center min-w-0 max-w-full" data-testid="role-switch" title="Role switch: scope is enforced on the server, the UI only sends the role name">
-              <div className="inline-flex items-center gap-0.5 max-w-full overflow-x-auto">
-                {SEGMENTS.map((r) => (
-                  <button key={r} type="button" data-role={r} data-testid={`role-${r}`} onClick={() => { if (persona === r) return; setPersona(r); toast(personas?.[r] || cap(r)); }} aria-pressed={persona === r}
-                    className={`role px-3 py-1 min-h-[44px] sm:min-h-0 rounded-full text-[14px] whitespace-nowrap ${persona === r ? "on" : "text-muted"}`}>{cap(r)}</button>
+          <nav id="tabs" aria-label="Screens">
+            {GROUPS.map(([g, ts]) => (
+              <div key={g} className="flex lg:flex-col gap-0.5">
+                <div className="nav-group">{g}</div>
+                {ts.map((k) => (
+                  <button key={k} data-tab={k} id={`tab-${k}`} onClick={() => show(k)} aria-current={tab === k ? "page" : undefined} className={`nav-item ${tab === k ? "on" : ""}`} title={LABEL[k]}>
+                    <NavIcon id={k} />
+                    <span className="nav-label">{LABEL[k]}</span>
+                  </button>
                 ))}
-                <select id="persona" data-testid="persona" aria-label="More roles" value={SEGMENTS.includes(persona) ? "" : persona} onChange={(e) => { const v = e.target.value; if (!v || v === persona) return; setPersona(v); toast(personas?.[v] || v); }}
-                  className={`min-h-[44px] sm:min-h-0 !border-0 !rounded-full !py-1 !pl-3 !pr-7 text-[14px] max-w-[150px] bg-transparent ${SEGMENTS.includes(persona) ? "" : "on"}`}>
-                  <option value="" disabled>More roles</option>
-                  {personas && Object.entries(personas).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                </select>
+              </div>
+            ))}
+          </nav>
+        </aside>
+        <div className="app-main">
+          <header className="topbar">
+            <div className="brand-lock">
+              <div>
+                <div className="brand-name">NimbusPay</div>
+                <div className="brand-product">Adoption Insights</div>
               </div>
             </div>
-            <span className="vdiv" aria-hidden="true" />
-            <div className="preset-scroll" role="group" aria-label="Scenario presets">
-              {SCEN.map((s: J) => (
-                <button key={s.key} type="button" data-preset={s.key} aria-pressed={ST?.dataset === s.key} title={s.label} onClick={() => loadScenario(s.key)}>
-                  {SHORT[s.key] || s.label}
+            <div className="top-actions">
+              <span className="pill">Synthetic</span>
+              <button type="button" className="icon-btn" aria-label={darkOn ? "Switch to light theme" : "Switch to dark theme"} title="Theme (T)" onClick={toggleTheme}>
+                {darkOn ? (
+                  <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="8" cy="8" r="3" /><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" /></svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M13.5 10.2A5.5 5.5 0 0 1 5.8 2.5 5.5 5.5 0 1 0 13.5 10.2z" /></svg>
+                )}
+              </button>
+              <button type="button" className="icon-btn" aria-label="Open command bar" title="Command (⌘K)" onClick={() => setCmd(true)}>
+                <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="7" cy="7" r="4.2" /><path d="M10.2 10.2 13.5 13.5" /></svg>
+              </button>
+              <div className="acct">
+                <button type="button" className="acct-btn" aria-label="Account" aria-expanded={acct} onClick={() => setAcct((v) => !v)}>
+                  <span className="acct-mark" aria-hidden="true">{(personaLabel || "E").slice(0, 1)}</span>
+                  <span className="acct-name">{personaLabel || "Account"}</span>
                 </button>
-              ))}
+                {acct ? (
+                  <div className="acct-menu glass" role="menu">
+                    <div className="acct-who">
+                      <b>{personaLabel || "Executive"}</b>
+                      <span>demo@nimbuspay.example</span>
+                    </div>
+                    <button type="button" role="menuitem" onClick={() => { setAcct(false); setProfile(true); }}>Profile</button>
+                    <button type="button" role="menuitem" onClick={() => { setAcct(false); setHelp(true); }}>Keyboard shortcuts</button>
+                    <button type="button" role="menuitem" onClick={() => { setAcct(false); toggleTheme(); }}>{darkOn ? "Light theme" : "Dark theme"}</button>
+                    <button type="button" role="menuitem" className="danger" onClick={signOut}>Sign out</button>
+                  </div>
+                ) : null}
+              </div>
             </div>
-            <span className="vdiv max-md:hidden" aria-hidden="true" />
-            <span id="ds">{ST ? <>Dataset: {ST.dataset_label} · data as of {ST.data_as_of}</> : ""}</span>
-          </div>
-        </div>
-        <div className="shell-body">
-          <div className={`shell-side ${collapsed ? "collapsed" : ""}`}>
-            <button type="button" className="icon-btn side-toggle" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} onClick={() => { const n = !collapsed; setCollapsed(n); localStorage.setItem("np-side", n ? "1" : "0"); }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 4h10M3 8h10M3 12h10" /></svg>
-            </button>
-            <nav id="tabs" aria-label="Screens">
-              {GROUPS.map(([g, ts]) => (
-                <div key={g} className="flex lg:flex-col gap-0.5">
-                  <div className="nav-group">{g}</div>
-                  {ts.map((k) => (
-                    <button key={k} data-tab={k} id={`tab-${k}`} onClick={() => show(k)} aria-current={tab === k ? "page" : undefined} className={`nav-item ${tab === k ? "on" : ""}`} title={LABEL[k]}>
-                      <NavIcon id={k} />
-                      <span className="nav-label">{LABEL[k]}</span>
-                    </button>
-                  ))}
-                </div>
-              ))}
-            </nav>
-          </div>
+          </header>
           <main id="view">
             {ST && personas ? (
               <Routes>
@@ -322,8 +335,8 @@ export default function App() {
               </Routes>
             ) : <Skeleton rows={6} />}
           </main>
+          <footer className="app-foot">Read-only. Every number is synthetic and labelled. Thresholds and weights are placeholders to agree. Built by Gowtham S.</footer>
         </div>
-        <footer className="app-foot">Read-only. Every number is synthetic and labelled; thresholds and weights are placeholders to agree. Metric version <span id="ver">v1.0</span>. Built by Gowtham S.</footer>
       </div>
       <CommandBar open={cmd} tabs={TABS} scen={SCEN} onTab={show} onPreset={loadScenario} onAsk={ask} onClose={() => setCmd(false)} />
       {tab !== "agent" ? <CopilotBar open={panel} chat={chatRef.current} onAsk={(q) => ask(q, undefined, true)} onOpenThread={() => { setPanel(false); show("agent"); }} onOpen={() => setPanel(true)} onToggle={() => setPanel((v) => !v)} /> : null}
