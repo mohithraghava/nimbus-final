@@ -453,11 +453,11 @@ html.dark .tile, html.dark .outcard, html.dark .metric-list, html.dark .search-p
 .copilot-sheet .log { overflow: auto; padding: 8px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
 .copilot-pill { margin: 0; }
 .copilot-dock {
-  position: fixed; z-index: 44; left: 50%; bottom: 22px; transform: translateX(-50%);
-  width: min(720px, calc(100vw - 48px)); margin: 0;
+  position: relative; left: auto; right: auto; bottom: auto; transform: none;
+  width: 100%; margin: 16px 0 0;
 }
 @media (max-width: 1023px) {
-  .copilot, .copilot-dock { bottom: 86px; width: min(680px, calc(100vw - 16px)); }
+  .copilot { bottom: 86px; width: min(680px, calc(100vw - 16px)); }
 }
 
 
